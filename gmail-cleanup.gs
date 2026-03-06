@@ -11,7 +11,7 @@
 
 const CONFIG = {
   // Max threads to process per run (Apps Script has 6-min execution limit)
-  BATCH_SIZE: 1000,
+  BATCH_SIZE: 500,
 
   // Delete permanently (true) or just move to trash (false)
   PERMANENT_DELETE: false,
