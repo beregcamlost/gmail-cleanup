@@ -116,7 +116,7 @@ Todos los ajustes están claramente etiquetados al **inicio del script** — es 
 ```javascript
 // ── Ajustes de Limpieza ────────────────────────────────────
 
-const CLEANUP_OLDER_THAN = 1;                // ¿Qué tan antiguos? (número)
+const CLEANUP_OLDER_THAN = 3;                // ¿Qué tan antiguos? (número)
 const CLEANUP_OLDER_THAN_UNIT = "years";     // "days", "months", o "years"
 const CLEANUP_AUTO_UNSUBSCRIBE = true;       // ¿Desuscribirse antes de eliminar?
 

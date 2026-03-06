@@ -27,7 +27,7 @@
 //           6 "months" = older than 6 months
 //           90 "days"  = older than 90 days
 //           0 (any)    = delete all matching emails regardless of age
-const CLEANUP_OLDER_THAN = 1;
+const CLEANUP_OLDER_THAN = 3;
 const CLEANUP_OLDER_THAN_UNIT = "years"; // "days", "months", or "years"
 
 // Should the script try to unsubscribe you from mailing lists?

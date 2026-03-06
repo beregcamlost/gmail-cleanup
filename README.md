@@ -116,7 +116,7 @@ All settings are clearly labeled at the **top of the script** — it's the only 
 ```javascript
 // ── Cleanup Settings ───────────────────────────────────────
 
-const CLEANUP_OLDER_THAN = 1;                // How old? (number)
+const CLEANUP_OLDER_THAN = 3;                // How old? (number)
 const CLEANUP_OLDER_THAN_UNIT = "years";     // "days", "months", or "years"
 const CLEANUP_AUTO_UNSUBSCRIBE = true;       // Unsubscribe before deleting?
 
