@@ -237,6 +237,8 @@ function loadSheetList_(tabName) {
  * Also unsubscribes you from mailing lists if enabled.
  */
 function cleanupInbox() {
+  setupSheet();
+
   const queries = [
     "category:promotions",
     "label:^unsub OR subject:(unsubscribe OR newsletter OR digest OR weekly OR bulletin)",
@@ -309,6 +311,7 @@ function dryRun() {
  * Respects EXCLUDED_SENDERS (hardcoded + dynamic from sheet).
  */
 function deleteAllEmails() {
+  setupSheet();
   const opts = DELETE_ALL_OPTIONS;
   const olderThan = opts.OLDER_THAN_DAYS > 0 ? ` older_than:${opts.OLDER_THAN_DAYS}d` : "";
   const query = `in:inbox${olderThan}`;
