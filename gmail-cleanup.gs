@@ -587,16 +587,25 @@ function tryUnsubscribe_(message) {
   return false;
 }
 
-// Health-related keywords (Spanish + English) for dynamic detection
+/**
+ * Strips accents/diacritics from a string.
+ * "clínica" → "clinica", "médico" → "medico"
+ */
+function stripAccents_(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// Health-related keywords (Spanish + English) for dynamic detection.
+// All stored without accents — matching is accent-insensitive.
 const HEALTH_KEYWORDS_ = [
   // Spanish
-  "clinica", "clínica", "hospital", "medic", "médic", "doctor", "doctora",
-  "salud", "dental", "odontologo", "odontólogo", "laboratorio", "farmacia",
-  "isapre", "fonasa", "consulta medica", "consulta médica", "examen",
-  "radiologia", "radiología", "oftalmolog", "dermatolog", "pediatr",
+  "clinica", "hospital", "medic", "doctor", "doctora",
+  "salud", "dental", "odontologo", "laboratorio", "farmacia",
+  "isapre", "fonasa", "consulta medica", "examen",
+  "radiologia", "oftalmolog", "dermatolog", "pediatr",
   "ginecolog", "cardiolog", "neurolog", "traumatolog", "kinesio",
-  "nutricion", "nutrición", "psicolog", "psiquiatr", "urgencia",
-  "receta", "hora medica", "hora médica", "resultado examen",
+  "nutricion", "psicolog", "psiquiatr", "urgencia",
+  "receta", "hora medica", "resultado examen",
   // English
   "clinic", "hospital", "medical", "healthcare", "health care",
   "doctor", "physician", "pharmacy", "dental", "laboratory",
@@ -616,11 +625,12 @@ function isExcluded_(message) {
 
 /**
  * Detects health-related emails by scanning sender name, email, and subject.
+ * Accent-insensitive: "Clínica" matches "clinica" and vice versa.
  */
 function isHealthRelated_(message) {
   const from = message.getFrom().toLowerCase();
   const subject = message.getSubject().toLowerCase();
-  const text = from + " " + subject;
+  const text = stripAccents_(from + " " + subject);
 
   return HEALTH_KEYWORDS_.some((kw) => text.includes(kw));
 }
