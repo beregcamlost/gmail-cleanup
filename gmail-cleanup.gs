@@ -397,6 +397,23 @@ function cleanupBlockedSenders() {
 }
 
 /**
+ * Creates/updates the Google Sheet tabs and syncs hardcoded values.
+ * Run this anytime to set up or refresh the sheet without running a cleanup.
+ */
+function setupSheet() {
+  const ss = getOrCreateSpreadsheet_();
+
+  // Ensure all tabs exist and are populated
+  syncSheetTab_(ss, "Excluded Senders", CONFIG.EXCLUDED_SENDERS);
+  syncSheetTab_(ss, "Unsubscribe Only", CONFIG.UNSUBSCRIBE_ONLY_SENDERS);
+
+  // Ensure log tab exists
+  getLogSheet_();
+
+  Logger.log(`Sheet ready: ${ss.getUrl()}`);
+}
+
+/**
  * Sets up automatic daily cleanup (runs between 2-3 AM).
  */
 function setupDailyTrigger() {
@@ -578,6 +595,45 @@ function emptySpam_() {
 
   Logger.log(`Spam folder emptied: ${totalDeleted} threads permanently deleted.`);
   return totalDeleted;
+}
+
+/**
+ * Ensures a sheet tab exists and contains all hardcoded values.
+ * Adds missing values without removing user-added entries.
+ */
+function syncSheetTab_(ss, tabName, hardcodedValues) {
+  let sheet = ss.getSheetByName(tabName);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(tabName);
+    sheet.getRange("A1").setValue("Sender / Domain");
+    sheet.getRange("A1:A1").setFontWeight("bold");
+    sheet.setFrozenRows(1);
+    sheet.getRange("A2").setNote("Type one domain or email per row.\nExamples: mybank.com, news@blog.com\nYou can also use commas: a.com, b.com");
+  }
+
+  // Read existing values from the sheet
+  const lastRow = sheet.getLastRow();
+  const existing = new Set();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, 1)
+      .getValues()
+      .flat()
+      .forEach((v) => {
+        if (v) existing.add(String(v).trim().toLowerCase());
+      });
+  }
+
+  // Add hardcoded values that aren't already in the sheet
+  const toAdd = hardcodedValues.filter((v) => !existing.has(v.toLowerCase()));
+  if (toAdd.length > 0) {
+    const startRow = Math.max(lastRow + 1, 2);
+    const rows = toAdd.map((v) => [v]);
+    sheet.getRange(startRow, 1, rows.length, 1).setValues(rows);
+    Logger.log(`${tabName}: added ${toAdd.length} new entries.`);
+  } else {
+    Logger.log(`${tabName}: already up to date.`);
+  }
 }
 
 function getOrCreateSpreadsheet_() {

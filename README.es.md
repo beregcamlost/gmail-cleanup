@@ -168,6 +168,7 @@ Solo escribe un dominio (ej. `mibanco.cl`) o correo en la columna A y el script 
 | `cleanupBlockedSenders()` | Elimina correos de tu lista de remitentes bloqueados |
 | `deleteAllEmails()` | Opción nuclear — elimina TODOS los correos (respeta exclusiones y antigüedad) |
 | `deleteAllEmailsDryRun()` | Modo simulación para `deleteAllEmails()` |
+| `setupSheet()` | Crea/actualiza las pestañas de Google Sheets y sincroniza valores del script |
 | `setupDailyTrigger()` | Configura ejecución automática diaria a las 2-3 AM |
 
 ---

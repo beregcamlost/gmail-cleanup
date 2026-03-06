@@ -168,6 +168,7 @@ Just type a domain (e.g., `mybank.com`) or email in column A and the script pick
 | `cleanupBlockedSenders()` | Deletes emails from your blocked senders list |
 | `deleteAllEmails()` | Nuclear option — deletes ALL emails (respects exclusions and age config) |
 | `deleteAllEmailsDryRun()` | Preview mode for `deleteAllEmails()` |
+| `setupSheet()` | Creates/refreshes the Google Sheet tabs and syncs hardcoded values |
 | `setupDailyTrigger()` | Sets up automatic daily execution at 2-3 AM |
 
 ---
