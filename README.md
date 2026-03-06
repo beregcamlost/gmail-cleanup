@@ -155,6 +155,7 @@ The script auto-creates a **"Gmail Cleanup Log"** spreadsheet in your Google Dri
 | **Unsubscribe Log** | Log of every unsubscribe attempt (date, sender, method, status) |
 | **Excluded Senders** | Add domains/emails here to exclude from deletion — no code changes needed |
 | **Unsubscribe Only** | Add domains/emails here to unsubscribe but keep their emails |
+| **Protected Senders** | Auto-populated log of senders that were skipped (with reason: bank, health, excluded, etc.) |
 
 Just type a domain (e.g., `mybank.com`) or email in column A and the script picks it up on the next run.
 

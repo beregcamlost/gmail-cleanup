@@ -349,7 +349,9 @@ function deleteAllEmails() {
     for (const thread of threads) {
       const msg = thread.getMessages()[0];
 
-      if (isExcluded_(msg)) {
+      const reason = getExclusionReason_(msg);
+      if (reason) {
+        logProtected_(msg, reason);
         totalSkipped++;
         continue;
       }
@@ -433,8 +435,14 @@ function setupSheet() {
   syncSheetTab_(ss, "Excluded Senders", CONFIG.EXCLUDED_SENDERS);
   syncSheetTab_(ss, "Unsubscribe Only", CONFIG.UNSUBSCRIBE_ONLY_SENDERS);
 
-  // Ensure log tab exists
+  // Ensure log and protected tabs exist
   getLogSheet_();
+  if (!ss.getSheetByName("Protected Senders")) {
+    const ps = ss.insertSheet("Protected Senders");
+    ps.appendRow(["Date", "From", "Subject", "Reason"]);
+    ps.getRange("1:1").setFontWeight("bold");
+    ps.setFrozenRows(1);
+  }
 
   Logger.log(`Sheet ready: ${ss.getUrl()}`);
 }
@@ -480,8 +488,12 @@ function processQuery_(query) {
     for (const thread of threads) {
       const firstMessage = thread.getMessages()[0];
 
-      // Fully excluded — skip entirely
-      if (isExcluded_(firstMessage)) continue;
+      // Fully excluded — skip entirely and log
+      const exclusionReason = getExclusionReason_(firstMessage);
+      if (exclusionReason) {
+        logProtected_(firstMessage, exclusionReason);
+        continue;
+      }
 
       // Unsubscribe only — unsub but don't delete
       if (isUnsubOnly_(firstMessage)) {
@@ -613,14 +625,33 @@ const HEALTH_KEYWORDS_ = [
 ];
 
 /**
+ * Checks if a sender is excluded. Returns the reason string or null.
+ */
+function getExclusionReason_(message) {
+  const from = message.getFrom().toLowerCase();
+
+  // Check hardcoded exclusions
+  const hardMatch = CONFIG.EXCLUDED_SENDERS.find((exc) => from.includes(exc));
+  if (hardMatch) return `Excluded (${hardMatch})`;
+
+  // Check dynamic exclusions from sheet
+  const dynMatch = getDynamicExcluded_().find((exc) => from.includes(exc));
+  if (dynMatch) return `Excluded - Sheet (${dynMatch})`;
+
+  // Check health keywords
+  const subject = message.getSubject().toLowerCase();
+  const text = stripAccents_(from + " " + subject);
+  const healthMatch = HEALTH_KEYWORDS_.find((kw) => text.includes(kw));
+  if (healthMatch) return `Health detected (${healthMatch})`;
+
+  return null;
+}
+
+/**
  * Checks if a sender is excluded (hardcoded + dynamic from sheet + health detection).
  */
 function isExcluded_(message) {
-  const from = message.getFrom().toLowerCase();
-  const hardcoded = CONFIG.EXCLUDED_SENDERS.some((exc) => from.includes(exc));
-  if (hardcoded) return true;
-  if (getDynamicExcluded_().some((exc) => from.includes(exc))) return true;
-  return isHealthRelated_(message);
+  return getExclusionReason_(message) !== null;
 }
 
 /**
@@ -643,6 +674,30 @@ function isUnsubOnly_(message) {
   const hardcoded = CONFIG.UNSUBSCRIBE_ONLY_SENDERS.some((exc) => from.includes(exc));
   if (hardcoded) return true;
   return getDynamicUnsubOnly_().some((exc) => from.includes(exc));
+}
+
+// Track already-logged protected senders (avoid duplicates per run)
+let loggedProtected_ = new Set();
+
+/**
+ * Logs a protected sender to the "Protected Senders" sheet tab.
+ * Only logs each sender once per run.
+ */
+function logProtected_(message, reason) {
+  const from = message.getFrom();
+  if (loggedProtected_.has(from)) return;
+  loggedProtected_.add(from);
+
+  const ss = getOrCreateSpreadsheet_();
+  let sheet = ss.getSheetByName("Protected Senders");
+  if (!sheet) {
+    sheet = ss.insertSheet("Protected Senders");
+    sheet.appendRow(["Date", "From", "Subject", "Reason"]);
+    sheet.getRange("1:1").setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+
+  sheet.appendRow([new Date(), from, message.getSubject(), reason]);
 }
 
 function emptySpam_() {

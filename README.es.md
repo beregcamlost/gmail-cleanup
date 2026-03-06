@@ -155,6 +155,7 @@ El script crea automáticamente una hoja **"Gmail Cleanup Log"** en tu Google Dr
 | **Unsubscribe Log** | Registro de cada intento de desuscripción (fecha, remitente, método, estado) |
 | **Excluded Senders** | Agrega dominios/correos aquí para excluirlos de eliminación — sin tocar código |
 | **Unsubscribe Only** | Agrega dominios/correos aquí para desuscribirte pero conservar sus correos |
+| **Protected Senders** | Log auto-generado de remitentes protegidos (con razón: banco, salud, excluido, etc.) |
 
 Solo escribe un dominio (ej. `mibanco.cl`) o correo en la columna A y el script lo detecta en la siguiente ejecución.
 
