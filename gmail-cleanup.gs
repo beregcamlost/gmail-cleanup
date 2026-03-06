@@ -181,9 +181,20 @@ function loadSheetList_(tabName) {
     sheet.getRange("A1").setValue("Sender / Domain");
     sheet.getRange("A1:A1").setFontWeight("bold");
     sheet.setFrozenRows(1);
-    sheet.getRange("A2").setValue("example.com").setFontColor("#999999");
-    sheet.getRange("A3").setNote("Type one domain or email per row.\nExamples: mybank.com, news@blog.com\nYou can also use commas: a.com, b.com");
-    return [];
+    sheet.getRange("A2").setNote("Type one domain or email per row.\nExamples: mybank.com, news@blog.com\nYou can also use commas: a.com, b.com");
+
+    // Pre-populate with hardcoded values so users see the full list
+    const seedValues =
+      tabName === "Excluded Senders" ? CONFIG.EXCLUDED_SENDERS :
+      tabName === "Unsubscribe Only" ? CONFIG.UNSUBSCRIBE_ONLY_SENDERS :
+      [];
+
+    if (seedValues.length > 0) {
+      const rows = seedValues.map((v) => [v]);
+      sheet.getRange(2, 1, rows.length, 1).setValues(rows);
+    }
+
+    return seedValues.map((v) => v.toLowerCase());
   }
 
   const lastRow = sheet.getLastRow();
@@ -573,16 +584,35 @@ function getOrCreateSpreadsheet_() {
   const name = CONFIG.LOG_SPREADSHEET_NAME;
   const files = DriveApp.getFilesByName(name);
 
+  let ss;
   if (files.hasNext()) {
-    return SpreadsheetApp.open(files.next());
+    ss = SpreadsheetApp.open(files.next());
+  } else {
+    ss = SpreadsheetApp.create(name);
+    const logSheet = ss.getActiveSheet();
+    logSheet.setName("Unsubscribe Log");
+    logSheet.appendRow(["Date", "From", "Method", "Unsubscribe Target", "Status"]);
+    logSheet.getRange("1:1").setFontWeight("bold");
+    logSheet.setFrozenRows(1);
   }
 
-  const ss = SpreadsheetApp.create(name);
-  const logSheet = ss.getActiveSheet();
-  logSheet.setName("Unsubscribe Log");
-  logSheet.appendRow(["Date", "From", "Method", "Unsubscribe Target", "Status"]);
-  logSheet.getRange("1:1").setFontWeight("bold");
-  logSheet.setFrozenRows(1);
+  // Rename leftover "Sheet1" to "Unsubscribe Log" if it exists
+  const sheet1 = ss.getSheetByName("Sheet1");
+  if (sheet1) {
+    const logSheet = ss.getSheetByName("Unsubscribe Log");
+    if (logSheet) {
+      // "Unsubscribe Log" already exists — just delete "Sheet1"
+      ss.deleteSheet(sheet1);
+    } else {
+      // Rename "Sheet1" to "Unsubscribe Log" and set it up
+      sheet1.setName("Unsubscribe Log");
+      if (sheet1.getLastRow() === 0) {
+        sheet1.appendRow(["Date", "From", "Method", "Unsubscribe Target", "Status"]);
+        sheet1.getRange("1:1").setFontWeight("bold");
+        sheet1.setFrozenRows(1);
+      }
+    }
+  }
 
   return ss;
 }
