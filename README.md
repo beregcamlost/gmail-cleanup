@@ -96,7 +96,8 @@ All settings are clearly labeled at the **top of the script** — it's the only 
 ```javascript
 // ── Cleanup Settings (promotions & newsletters) ────────────
 
-const CLEANUP_OLDER_THAN_DAYS = 365;        // Only delete emails older than 1 year
+const CLEANUP_OLDER_THAN = 1;                // How old? (number)
+const CLEANUP_OLDER_THAN_UNIT = "years";     // "days", "months", or "years"
 const CLEANUP_AUTO_UNSUBSCRIBE = true;       // Unsubscribe before deleting?
 const CLEANUP_EXCLUDED_SENDERS = [           // Domains/senders to KEEP
   "linkedin.com",
@@ -107,7 +108,8 @@ const CLEANUP_BLOCKED_SENDERS = [];          // Senders to ALWAYS delete
 
 // ── Delete All Settings (nuclear option) ───────────────────
 
-const DELETE_ALL_OLDER_THAN_DAYS = 365;      // Only delete emails older than 1 year
+const DELETE_ALL_OLDER_THAN = 1;             // How old? (number)
+const DELETE_ALL_OLDER_THAN_UNIT = "years";  // "days", "months", or "years"
 const DELETE_ALL_EXCLUDED_SENDERS = [        // Domains/senders to KEEP
   "linkedin.com",
   "google.com",

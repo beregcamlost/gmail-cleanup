@@ -22,10 +22,13 @@
 //    Targets: promotions, newsletters, and marketing emails
 
 // How old must an email be before it gets deleted?
-// Example: 365 = only delete emails older than 1 year
-//          30  = only delete emails older than 1 month
-//          0   = delete all matching emails regardless of age
-const CLEANUP_OLDER_THAN_DAYS = 365;
+// Set the number and the unit ("days", "months", or "years").
+// Examples: 1 "years"  = older than 1 year
+//           6 "months" = older than 6 months
+//           90 "days"  = older than 90 days
+//           0 (any)    = delete all matching emails regardless of age
+const CLEANUP_OLDER_THAN = 1;
+const CLEANUP_OLDER_THAN_UNIT = "years"; // "days", "months", or "years"
 
 // Should the script try to unsubscribe you from mailing lists?
 // true  = yes, unsubscribe before deleting
@@ -57,7 +60,9 @@ const CLEANUP_BLOCKED_SENDERS = [
 //    Use this for a full inbox wipe with your own filters.
 
 // How old must an email be before it gets deleted?
-const DELETE_ALL_OLDER_THAN_DAYS = 365;
+// Set the number and the unit ("days", "months", or "years").
+const DELETE_ALL_OLDER_THAN = 1;
+const DELETE_ALL_OLDER_THAN_UNIT = "years"; // "days", "months", or "years"
 
 // Domains or senders you want to KEEP when deleting everything.
 const DELETE_ALL_EXCLUDED_SENDERS = [
@@ -86,11 +91,21 @@ const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 //  The rest is the script logic.
 // ************************************************************
 
+function toDays_(value, unit) {
+  if (value === 0) return 0;
+  switch (unit) {
+    case "years":  return value * 365;
+    case "months": return value * 30;
+    case "days":   return value;
+    default:       return value;
+  }
+}
+
 const CONFIG = {
   BATCH_SIZE: 500,
   PERMANENT_DELETE: PERMANENT_DELETE,
   AUTO_UNSUBSCRIBE: CLEANUP_AUTO_UNSUBSCRIBE,
-  OLDER_THAN_DAYS: CLEANUP_OLDER_THAN_DAYS,
+  OLDER_THAN_DAYS: toDays_(CLEANUP_OLDER_THAN, CLEANUP_OLDER_THAN_UNIT),
   EXCLUDED_SENDERS: CLEANUP_EXCLUDED_SENDERS,
   BLOCKED_SENDERS: CLEANUP_BLOCKED_SENDERS,
   UNSUBSCRIBED_LABEL: "_unsubscribed",
@@ -98,7 +113,7 @@ const CONFIG = {
 };
 
 const DELETE_ALL_OPTIONS = {
-  OLDER_THAN_DAYS: DELETE_ALL_OLDER_THAN_DAYS,
+  OLDER_THAN_DAYS: toDays_(DELETE_ALL_OLDER_THAN, DELETE_ALL_OLDER_THAN_UNIT),
   EXCLUDED_SENDERS: DELETE_ALL_EXCLUDED_SENDERS,
   PERMANENT_DELETE: PERMANENT_DELETE,
 };

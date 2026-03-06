@@ -96,7 +96,8 @@ Todos los ajustes están claramente etiquetados al **inicio del script** — es 
 ```javascript
 // ── Ajustes de Limpieza (promociones y newsletters) ────────
 
-const CLEANUP_OLDER_THAN_DAYS = 365;        // Solo eliminar correos de más de 1 año
+const CLEANUP_OLDER_THAN = 1;                // ¿Qué tan antiguos? (número)
+const CLEANUP_OLDER_THAN_UNIT = "years";     // "days", "months", o "years"
 const CLEANUP_AUTO_UNSUBSCRIBE = true;       // ¿Desuscribirse antes de eliminar?
 const CLEANUP_EXCLUDED_SENDERS = [           // Dominios/remitentes a CONSERVAR
   "linkedin.com",
@@ -107,7 +108,8 @@ const CLEANUP_BLOCKED_SENDERS = [];          // Remitentes a SIEMPRE eliminar
 
 // ── Ajustes de Eliminar Todo (opción nuclear) ──────────────
 
-const DELETE_ALL_OLDER_THAN_DAYS = 365;      // Solo eliminar correos de más de 1 año
+const DELETE_ALL_OLDER_THAN = 1;             // ¿Qué tan antiguos? (número)
+const DELETE_ALL_OLDER_THAN_UNIT = "years";  // "days", "months", o "years"
 const DELETE_ALL_EXCLUDED_SENDERS = [        // Dominios/remitentes a CONSERVAR
   "linkedin.com",
   "google.com",
