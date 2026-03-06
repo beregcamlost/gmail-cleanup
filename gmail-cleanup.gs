@@ -160,9 +160,17 @@ function getDynamicUnsubOnly_() {
   return dynamicUnsubOnly_;
 }
 
+// Placeholders and junk that should never be treated as real senders
+const IGNORED_VALUES_ = ["example.com", "sender / domain", "dominio / remitente"];
+
+// Minimum valid pattern: at least "x.y" (e.g., "a.cl")
+const VALID_SENDER_PATTERN_ = /^[^@\s]+(\.[^@\s]+)+$|^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 /**
  * Reads a single-column list from a named tab in the log spreadsheet.
- * Returns an array of lowercase strings.
+ * Bulletproof: handles empty rows, junk, commas, angle brackets, numbers,
+ * missing headers, placeholders, and duplicate entries.
+ * Returns an array of unique lowercase strings.
  */
 function loadSheetList_(tabName) {
   const ss = getOrCreateSpreadsheet_();
@@ -171,22 +179,46 @@ function loadSheetList_(tabName) {
   if (!sheet) {
     sheet = ss.insertSheet(tabName);
     sheet.getRange("A1").setValue("Sender / Domain");
-    sheet.getRange("A2").setValue("example.com");
-    sheet.getRange("1:1").setFontWeight("bold");
+    sheet.getRange("A1:A1").setFontWeight("bold");
     sheet.setFrozenRows(1);
-    sheet.getRange("A2").setFontColor("#999999");
+    sheet.getRange("A2").setValue("example.com").setFontColor("#999999");
+    sheet.getRange("A3").setNote("Type one domain or email per row.\nExamples: mybank.com, news@blog.com\nYou can also use commas: a.com, b.com");
     return [];
   }
 
   const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
+  if (lastRow < 1) return [];
 
-  return sheet
-    .getRange(2, 1, lastRow - 1, 1)
+  // Read ALL rows (including row 1 in case someone deleted the header)
+  const raw = sheet
+    .getRange(1, 1, lastRow, 1)
     .getValues()
-    .flat()
-    .filter((v) => v && String(v).trim())
-    .map((v) => String(v).trim().toLowerCase());
+    .flat();
+
+  const results = new Set();
+
+  for (const cell of raw) {
+    if (cell === null || cell === undefined) continue;
+
+    const str = String(cell).trim();
+    if (!str) continue;
+
+    // Support comma-separated values in a single cell
+    const parts = str.split(/[,;]+/);
+
+    for (let part of parts) {
+      // Strip angle brackets, quotes, and whitespace
+      part = part.trim().toLowerCase().replace(/[<>"']/g, "").trim();
+
+      if (!part) continue;
+      if (IGNORED_VALUES_.includes(part)) continue;
+      if (!VALID_SENDER_PATTERN_.test(part)) continue;
+
+      results.add(part);
+    }
+  }
+
+  return Array.from(results);
 }
 
 /**
