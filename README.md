@@ -91,23 +91,33 @@ The script uses three search queries to find emails to clean up:
 
 ## Configuration
 
-All settings are in the `CONFIG` object at the top of the script:
+All settings are clearly labeled at the **top of the script** — it's the only section you need to edit:
 
 ```javascript
-const CONFIG = {
-  BATCH_SIZE: 500,            // Threads per batch (max allowed by Gmail API)
-  PERMANENT_DELETE: false,     // false = trash, true = permanent delete
-  AUTO_UNSUBSCRIBE: true,      // Attempt auto-unsubscribe before deleting
-  OLDER_THAN_DAYS: 365,        // Only process emails older than this (0 = all)
-  EXCLUDED_SENDERS: [          // Domains/senders to never delete
-    "linkedin.com",
-    "google.com",
-    "anthropic.com"
-  ],
-  BLOCKED_SENDERS: [],         // Senders to always delete
-  UNSUBSCRIBED_LABEL: "_unsubscribed",
-  LOG_SPREADSHEET_NAME: "Gmail Cleanup Log",
-};
+// ── Cleanup Settings (promotions & newsletters) ────────────
+
+const CLEANUP_OLDER_THAN_DAYS = 365;        // Only delete emails older than 1 year
+const CLEANUP_AUTO_UNSUBSCRIBE = true;       // Unsubscribe before deleting?
+const CLEANUP_EXCLUDED_SENDERS = [           // Domains/senders to KEEP
+  "linkedin.com",
+  "google.com",
+  "anthropic.com",
+];
+const CLEANUP_BLOCKED_SENDERS = [];          // Senders to ALWAYS delete
+
+// ── Delete All Settings (nuclear option) ───────────────────
+
+const DELETE_ALL_OLDER_THAN_DAYS = 365;      // Only delete emails older than 1 year
+const DELETE_ALL_EXCLUDED_SENDERS = [        // Domains/senders to KEEP
+  "linkedin.com",
+  "google.com",
+  "anthropic.com",
+];
+
+// ── General ────────────────────────────────────────────────
+
+const PERMANENT_DELETE = false;              // false = trash, true = gone forever
+const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 ```
 
 ---
@@ -130,6 +140,8 @@ Every unsubscribe attempt is logged to a Google Sheet called **"Gmail Cleanup Lo
 | `cleanupInbox()` | Main cleanup — deletes promotions/newsletters and unsubscribes |
 | `dryRun()` | Preview mode — shows what would be deleted without acting |
 | `cleanupBlockedSenders()` | Deletes emails from your blocked senders list |
+| `deleteAllEmails()` | Nuclear option — deletes ALL emails (respects its own age/exclusion config) |
+| `deleteAllEmailsDryRun()` | Preview mode for `deleteAllEmails()` |
 | `setupDailyTrigger()` | Sets up automatic daily execution at 2-3 AM |
 
 ---

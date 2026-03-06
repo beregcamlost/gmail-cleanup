@@ -91,23 +91,33 @@ El script usa tres consultas de búsqueda para encontrar correos a limpiar:
 
 ## Configuración
 
-Todos los ajustes están en el objeto `CONFIG` al inicio del script:
+Todos los ajustes están claramente etiquetados al **inicio del script** — es la única sección que necesitas editar:
 
 ```javascript
-const CONFIG = {
-  BATCH_SIZE: 500,            // Hilos por lote (máximo permitido por Gmail API)
-  PERMANENT_DELETE: false,     // false = papelera, true = eliminación permanente
-  AUTO_UNSUBSCRIBE: true,      // Intentar desuscripción automática antes de eliminar
-  OLDER_THAN_DAYS: 365,        // Solo procesar correos más antiguos que esto (0 = todos)
-  EXCLUDED_SENDERS: [          // Dominios/remitentes que nunca se eliminan
-    "linkedin.com",
-    "google.com",
-    "anthropic.com"
-  ],
-  BLOCKED_SENDERS: [],         // Remitentes a eliminar siempre
-  UNSUBSCRIBED_LABEL: "_unsubscribed",
-  LOG_SPREADSHEET_NAME: "Gmail Cleanup Log",
-};
+// ── Ajustes de Limpieza (promociones y newsletters) ────────
+
+const CLEANUP_OLDER_THAN_DAYS = 365;        // Solo eliminar correos de más de 1 año
+const CLEANUP_AUTO_UNSUBSCRIBE = true;       // ¿Desuscribirse antes de eliminar?
+const CLEANUP_EXCLUDED_SENDERS = [           // Dominios/remitentes a CONSERVAR
+  "linkedin.com",
+  "google.com",
+  "anthropic.com",
+];
+const CLEANUP_BLOCKED_SENDERS = [];          // Remitentes a SIEMPRE eliminar
+
+// ── Ajustes de Eliminar Todo (opción nuclear) ──────────────
+
+const DELETE_ALL_OLDER_THAN_DAYS = 365;      // Solo eliminar correos de más de 1 año
+const DELETE_ALL_EXCLUDED_SENDERS = [        // Dominios/remitentes a CONSERVAR
+  "linkedin.com",
+  "google.com",
+  "anthropic.com",
+];
+
+// ── General ────────────────────────────────────────────────
+
+const PERMANENT_DELETE = false;              // false = papelera, true = eliminado para siempre
+const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 ```
 
 ---
@@ -130,6 +140,8 @@ Cada intento de desuscripción se registra en una hoja de Google Sheets llamada 
 | `cleanupInbox()` | Limpieza principal — elimina promociones/newsletters y desuscribe |
 | `dryRun()` | Modo simulación — muestra qué se eliminaría sin ejecutar nada |
 | `cleanupBlockedSenders()` | Elimina correos de tu lista de remitentes bloqueados |
+| `deleteAllEmails()` | Opción nuclear — elimina TODOS los correos (respeta su propia config de antigüedad/exclusiones) |
+| `deleteAllEmailsDryRun()` | Modo simulación para `deleteAllEmails()` |
 | `setupDailyTrigger()` | Configura ejecución automática diaria a las 2-3 AM |
 
 ---
