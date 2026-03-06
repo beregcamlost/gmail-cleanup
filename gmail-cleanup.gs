@@ -35,21 +35,49 @@ const CLEANUP_OLDER_THAN_UNIT = "years"; // "days", "months", or "years"
 // false = no, just delete without unsubscribing
 const CLEANUP_AUTO_UNSUBSCRIBE = true;
 
-// Domains or senders you want to KEEP (never delete).
-// Add any email address or domain you want to protect.
-// Example: "amazon.com" will protect ALL emails from Amazon.
-const CLEANUP_EXCLUDED_SENDERS = [
+// ── Excluded Senders (shared by all functions) ─────────────
+//    These senders are NEVER touched — no unsubscribe, no delete.
+//    You can also add senders dynamically via the Google Sheet
+//    (see the "Excluded Senders" tab in your "Gmail Cleanup Log").
+const EXCLUDED_SENDERS = [
   "linkedin.com",
   "google.com",
   "anthropic.com",
   // Add more here, e.g.:
   // "amazon.com",
-  // "mybank.com",
   // "mom@gmail.com",
+
+  // ── Chilean Banks ──
+  "bancochile.cl",
+  "bancoestado.cl",
+  "santander.cl",
+  "bci.cl",
+  "scotiabank.cl",
+  "itau.cl",
+  "bice.cl",
+  "bancofalabella.cl",
+  "bancoripley.cl",
+  "bancosecurity.cl",
+  "bancoconsorcio.cl",
+  "bancointernacional.cl",
+  "coopeuch.cl",
+  "tenpo.cl",
 ];
 
-// Senders you ALWAYS want deleted, no matter what.
-// Leave empty [] if you don't have any.
+// ── Unsubscribe Only (unsub but keep emails) ───────────────
+//    Senders listed here will be unsubscribed from mailing lists
+//    but their emails will NOT be deleted. Useful for newsletters
+//    you want to stop receiving but want to keep the archive.
+//    You can also add senders via the "Unsubscribe Only" tab
+//    in your Google Sheet.
+const UNSUBSCRIBE_ONLY_SENDERS = [
+  // "newsletter@interesting-blog.com",
+  // "updates@service-i-use.com",
+];
+
+// ── Blocked Senders (always delete) ────────────────────────
+//    Senders you ALWAYS want deleted, no matter what.
+//    Leave empty [] if you don't have any.
 const CLEANUP_BLOCKED_SENDERS = [
   // "noreply@spammy-company.com",
   // "deals@annoying-store.com",
@@ -64,24 +92,21 @@ const CLEANUP_BLOCKED_SENDERS = [
 const DELETE_ALL_OLDER_THAN = 1;
 const DELETE_ALL_OLDER_THAN_UNIT = "years"; // "days", "months", or "years"
 
-// Domains or senders you want to KEEP when deleting everything.
-const DELETE_ALL_EXCLUDED_SENDERS = [
-  "linkedin.com",
-  "google.com",
-  "anthropic.com",
-  // Add more here, e.g.:
-  // "work-email.com",
-  // "important-sender@example.com",
-];
+// Uses the same EXCLUDED_SENDERS list from above.
 
 // ── General Settings ───────────────────────────────────────
+
+// Also empty the Spam folder on each run?
+// true  = yes, permanently delete all spam
+// false = no, leave spam alone
+const EMPTY_SPAM = true;
 
 // What happens to deleted emails?
 // false = move to Trash (you can recover them for 30 days)
 // true  = delete permanently (cannot be recovered!)
 const PERMANENT_DELETE = false;
 
-// Name of the Google Sheet where unsubscribe actions are logged.
+// Name of the Google Sheet where logs and dynamic lists are stored.
 // A spreadsheet with this name will be created in your Google Drive.
 const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 
@@ -106,7 +131,8 @@ const CONFIG = {
   PERMANENT_DELETE: PERMANENT_DELETE,
   AUTO_UNSUBSCRIBE: CLEANUP_AUTO_UNSUBSCRIBE,
   OLDER_THAN_DAYS: toDays_(CLEANUP_OLDER_THAN, CLEANUP_OLDER_THAN_UNIT),
-  EXCLUDED_SENDERS: CLEANUP_EXCLUDED_SENDERS,
+  EXCLUDED_SENDERS: EXCLUDED_SENDERS,
+  UNSUBSCRIBE_ONLY_SENDERS: UNSUBSCRIBE_ONLY_SENDERS,
   BLOCKED_SENDERS: CLEANUP_BLOCKED_SENDERS,
   UNSUBSCRIBED_LABEL: "_unsubscribed",
   LOG_SPREADSHEET_NAME: LOG_SPREADSHEET_NAME,
@@ -114,9 +140,54 @@ const CONFIG = {
 
 const DELETE_ALL_OPTIONS = {
   OLDER_THAN_DAYS: toDays_(DELETE_ALL_OLDER_THAN, DELETE_ALL_OLDER_THAN_UNIT),
-  EXCLUDED_SENDERS: DELETE_ALL_EXCLUDED_SENDERS,
+  EXCLUDED_SENDERS: EXCLUDED_SENDERS,
   PERMANENT_DELETE: PERMANENT_DELETE,
 };
+
+// ── Cached dynamic lists (loaded once per run) ─────────────
+let dynamicExcluded_ = null;
+let dynamicUnsubOnly_ = null;
+
+function getDynamicExcluded_() {
+  if (dynamicExcluded_) return dynamicExcluded_;
+  dynamicExcluded_ = loadSheetList_("Excluded Senders");
+  return dynamicExcluded_;
+}
+
+function getDynamicUnsubOnly_() {
+  if (dynamicUnsubOnly_) return dynamicUnsubOnly_;
+  dynamicUnsubOnly_ = loadSheetList_("Unsubscribe Only");
+  return dynamicUnsubOnly_;
+}
+
+/**
+ * Reads a single-column list from a named tab in the log spreadsheet.
+ * Returns an array of lowercase strings.
+ */
+function loadSheetList_(tabName) {
+  const ss = getOrCreateSpreadsheet_();
+  let sheet = ss.getSheetByName(tabName);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(tabName);
+    sheet.getRange("A1").setValue("Sender / Domain");
+    sheet.getRange("A2").setValue("example.com");
+    sheet.getRange("1:1").setFontWeight("bold");
+    sheet.setFrozenRows(1);
+    sheet.getRange("A2").setFontColor("#999999");
+    return [];
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return [];
+
+  return sheet
+    .getRange(2, 1, lastRow - 1, 1)
+    .getValues()
+    .flat()
+    .filter((v) => v && String(v).trim())
+    .map((v) => String(v).trim().toLowerCase());
+}
 
 /**
  * Main cleanup — deletes promotions, newsletters, and marketing emails.
@@ -131,20 +202,27 @@ function cleanupInbox() {
 
   let totalDeleted = 0;
   let totalUnsubscribed = 0;
+  let totalUnsubOnly = 0;
 
   for (const query of queries) {
     const result = processQuery_(query);
     totalDeleted += result.deleted;
     totalUnsubscribed += result.unsubscribed;
+    totalUnsubOnly += result.unsubOnly;
+  }
+
+  let spamDeleted = 0;
+  if (EMPTY_SPAM) {
+    spamDeleted = emptySpam_();
   }
 
   Logger.log(
-    `Done. Deleted: ${totalDeleted} threads, Unsubscribed: ${totalUnsubscribed} senders.`
+    `Done. Deleted: ${totalDeleted}, Unsubscribed: ${totalUnsubscribed}, Unsub-only (kept): ${totalUnsubOnly}, Spam purged: ${spamDeleted}.`
   );
 }
 
 /**
- * Preview mode — shows what cleanupInbox would delete without actually deleting.
+ * Preview mode — shows what cleanupInbox would do without actually doing it.
  * Always run this first!
  */
 function dryRun() {
@@ -165,20 +243,27 @@ function dryRun() {
       if (seen.has(id)) continue;
 
       const msg = thread.getMessages()[0];
+      const from = msg.getFrom();
+
       if (isExcluded_(msg)) continue;
+
       seen.add(id);
 
-      Logger.log(`[WOULD DELETE] From: ${msg.getFrom()} | Subject: ${msg.getSubject()}`);
+      if (isUnsubOnly_(msg)) {
+        Logger.log(`[UNSUB ONLY - KEEP] From: ${from} | Subject: ${msg.getSubject()}`);
+      } else {
+        Logger.log(`[WOULD DELETE] From: ${from} | Subject: ${msg.getSubject()}`);
+      }
     }
   }
 
   Logger.log(`\nTotal unique threads that would be affected: ${seen.size}`);
-  Logger.log("Run cleanupInbox() to actually delete them.");
+  Logger.log("Run cleanupInbox() to actually execute.");
 }
 
 /**
  * Nuclear option — deletes ALL emails from your inbox.
- * Respects DELETE_ALL_OLDER_THAN_DAYS and DELETE_ALL_EXCLUDED_SENDERS.
+ * Respects EXCLUDED_SENDERS (hardcoded + dynamic from sheet).
  */
 function deleteAllEmails() {
   const opts = DELETE_ALL_OPTIONS;
@@ -193,10 +278,9 @@ function deleteAllEmails() {
     threads = GmailApp.search(query, 0, CONFIG.BATCH_SIZE);
 
     for (const thread of threads) {
-      const from = thread.getMessages()[0].getFrom().toLowerCase();
-      const excluded = opts.EXCLUDED_SENDERS.some((exc) => from.includes(exc));
+      const msg = thread.getMessages()[0];
 
-      if (excluded) {
+      if (isExcluded_(msg)) {
         totalSkipped++;
         continue;
       }
@@ -227,10 +311,8 @@ function deleteAllEmailsDryRun() {
 
   for (const thread of threads) {
     const msg = thread.getMessages()[0];
-    const from = msg.getFrom().toLowerCase();
-    const excluded = opts.EXCLUDED_SENDERS.some((exc) => from.includes(exc));
 
-    if (excluded) {
+    if (isExcluded_(msg)) {
       Logger.log(`[SKIP - EXCLUDED] From: ${msg.getFrom()} | Subject: ${msg.getSubject()}`);
       skipped++;
     } else {
@@ -303,17 +385,27 @@ function processQuery_(query) {
 
   let deleted = 0;
   let unsubscribed = 0;
+  let unsubOnly = 0;
   let threads;
 
   do {
     threads = GmailApp.search(fullQuery, 0, CONFIG.BATCH_SIZE);
 
     for (const thread of threads) {
-      const messages = thread.getMessages();
-      const firstMessage = messages[0];
+      const firstMessage = thread.getMessages()[0];
 
+      // Fully excluded — skip entirely
       if (isExcluded_(firstMessage)) continue;
 
+      // Unsubscribe only — unsub but don't delete
+      if (isUnsubOnly_(firstMessage)) {
+        if (CONFIG.AUTO_UNSUBSCRIBE && tryUnsubscribe_(firstMessage)) {
+          unsubOnly++;
+        }
+        continue;
+      }
+
+      // Default — unsub + delete
       if (CONFIG.AUTO_UNSUBSCRIBE) {
         if (tryUnsubscribe_(firstMessage)) {
           unsubscribed++;
@@ -329,7 +421,7 @@ function processQuery_(query) {
     }
   } while (threads.length === CONFIG.BATCH_SIZE);
 
-  return { deleted, unsubscribed };
+  return { deleted, unsubscribed, unsubOnly };
 }
 
 function tryUnsubscribe_(message) {
@@ -409,31 +501,75 @@ function tryUnsubscribe_(message) {
   return false;
 }
 
-function getLogSheet_() {
+/**
+ * Checks if a sender is excluded (hardcoded + dynamic from sheet).
+ */
+function isExcluded_(message) {
+  const from = message.getFrom().toLowerCase();
+  const hardcoded = CONFIG.EXCLUDED_SENDERS.some((exc) => from.includes(exc));
+  if (hardcoded) return true;
+  return getDynamicExcluded_().some((exc) => from.includes(exc));
+}
+
+/**
+ * Checks if a sender is in the "unsubscribe only" list (hardcoded + dynamic).
+ */
+function isUnsubOnly_(message) {
+  const from = message.getFrom().toLowerCase();
+  const hardcoded = CONFIG.UNSUBSCRIBE_ONLY_SENDERS.some((exc) => from.includes(exc));
+  if (hardcoded) return true;
+  return getDynamicUnsubOnly_().some((exc) => from.includes(exc));
+}
+
+function emptySpam_() {
+  let totalDeleted = 0;
+  let threads;
+
+  do {
+    threads = GmailApp.search("in:spam", 0, CONFIG.BATCH_SIZE);
+    for (const thread of threads) {
+      Gmail.Users.Threads.remove("me", thread.getId());
+      totalDeleted++;
+    }
+  } while (threads.length === CONFIG.BATCH_SIZE);
+
+  Logger.log(`Spam folder emptied: ${totalDeleted} threads permanently deleted.`);
+  return totalDeleted;
+}
+
+function getOrCreateSpreadsheet_() {
   const name = CONFIG.LOG_SPREADSHEET_NAME;
   const files = DriveApp.getFilesByName(name);
 
-  let ss;
   if (files.hasNext()) {
-    ss = SpreadsheetApp.open(files.next());
-  } else {
-    ss = SpreadsheetApp.create(name);
-    const sheet = ss.getActiveSheet();
+    return SpreadsheetApp.open(files.next());
+  }
+
+  const ss = SpreadsheetApp.create(name);
+  const logSheet = ss.getActiveSheet();
+  logSheet.setName("Unsubscribe Log");
+  logSheet.appendRow(["Date", "From", "Method", "Unsubscribe Target", "Status"]);
+  logSheet.getRange("1:1").setFontWeight("bold");
+  logSheet.setFrozenRows(1);
+
+  return ss;
+}
+
+function getLogSheet_() {
+  const ss = getOrCreateSpreadsheet_();
+  let sheet = ss.getSheetByName("Unsubscribe Log");
+  if (!sheet) {
+    sheet = ss.insertSheet("Unsubscribe Log");
     sheet.appendRow(["Date", "From", "Method", "Unsubscribe Target", "Status"]);
     sheet.getRange("1:1").setFontWeight("bold");
     sheet.setFrozenRows(1);
   }
-  return ss.getActiveSheet();
+  return sheet;
 }
 
 function logUnsubscribe_(from, method, target, status) {
   const sheet = getLogSheet_();
   sheet.appendRow([new Date(), from, method, target, status]);
-}
-
-function isExcluded_(message) {
-  const from = message.getFrom().toLowerCase();
-  return CONFIG.EXCLUDED_SENDERS.some((exc) => from.includes(exc));
 }
 
 function getOrCreateLabel_(name) {

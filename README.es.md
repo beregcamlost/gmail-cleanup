@@ -36,11 +36,30 @@ Un script de Google Apps Script que limpia automáticamente tu bandeja de Gmail 
 |----------------|-------------|
 | **Detección Inteligente** | Detecta la categoría Promociones de Gmail, patrones de newsletters y remitentes de marketing |
 | **Auto-Desuscripción** | Analiza los headers `List-Unsubscribe` y ejecuta tanto endpoints HTTP (RFC 8058 one-click) como mailto |
-| **Exclusión de Remitentes** | Lista blanca de dominios que quieres conservar (ej. `linkedin.com`, `google.com`) |
+| **Exclusión de Remitentes** | Lista blanca de dominios que quieres conservar — en código o desde Google Sheets |
+| **Solo Desuscribir** | Desuscribirse de remitentes pero conservar sus correos (ideal para newsletters que quieres archivar) |
+| **Listas Dinámicas** | Agregar/quitar remitentes excluidos o solo-desuscribir directamente desde Google Sheets |
+| **Limpieza de Spam** | Opcionalmente vacía la carpeta de Spam en cada ejecución |
 | **Log Persistente** | Cada acción de desuscripción se registra en una hoja de Google Sheets |
 | **Modo Simulación** | Previsualiza qué se eliminaría antes de ejecutar |
 | **Automatización Diaria** | Trigger programado opcional para limpieza diaria automática |
 | **Remitentes Bloqueados** | Mantén una lista de remitentes que siempre quieres eliminar |
+
+---
+
+## Cómo Se Tratan los Remitentes
+
+El script trata a los remitentes de tres formas distintas:
+
+| Lista | ¿Desuscribir? | ¿Eliminar? | Caso de uso |
+|-------|---------------|------------|-------------|
+| **Excluidos** | No | No | Bancos, servicios importantes — no tocar nada |
+| **Solo Desuscribir** | Sí | No | Newsletters que quieres dejar de recibir pero conservar el archivo |
+| **Por defecto** (todo lo demás) | Sí | Sí | Spam, promociones — desuscribir y eliminar |
+
+Ambas listas (**Excluidos** y **Solo Desuscribir**) se pueden gestionar de dos formas:
+1. **En el script** — editar los arrays al inicio del archivo
+2. **En Google Sheets** — agregar remitentes en las pestañas "Excluded Senders" o "Unsubscribe Only" (se crean automáticamente en la primera ejecución)
 
 ---
 
@@ -54,7 +73,7 @@ El script usa tres consultas de búsqueda para encontrar correos a limpiar:
 | Patrones en asunto/etiquetas | Correos con `unsubscribe`, `newsletter`, `digest`, `weekly`, `bulletin` en el asunto | Newsletters, resúmenes semanales |
 | Patrones de remitente | Correos de `noreply`, `no-reply`, `newsletter`, `marketing`, `promo`, `info@`, `news@` | Notificaciones automáticas, envíos masivos |
 
-> **Nota:** La consulta de patrones de remitente puede coincidir con correos transaccionales legítimos (ej. confirmaciones de pedido de `noreply@`). Usa `EXCLUDED_SENDERS` para proteger los dominios que quieras conservar, y siempre ejecuta `dryRun()` primero para verificar qué se eliminaría.
+> **Nota:** La consulta de patrones de remitente puede coincidir con correos transaccionales legítimos (ej. confirmaciones de pedido de `noreply@`). Usa `EXCLUDED_SENDERS` para proteger los dominios que quieras conservar, y siempre ejecuta `dryRun()` primero para verificar.
 
 ---
 
@@ -94,44 +113,49 @@ El script usa tres consultas de búsqueda para encontrar correos a limpiar:
 Todos los ajustes están claramente etiquetados al **inicio del script** — es la única sección que necesitas editar:
 
 ```javascript
-// ── Ajustes de Limpieza (promociones y newsletters) ────────
+// ── Ajustes de Limpieza ────────────────────────────────────
 
 const CLEANUP_OLDER_THAN = 1;                // ¿Qué tan antiguos? (número)
 const CLEANUP_OLDER_THAN_UNIT = "years";     // "days", "months", o "years"
 const CLEANUP_AUTO_UNSUBSCRIBE = true;       // ¿Desuscribirse antes de eliminar?
-const CLEANUP_EXCLUDED_SENDERS = [           // Dominios/remitentes a CONSERVAR
-  "linkedin.com",
-  "google.com",
-  "anthropic.com",
+
+const EXCLUDED_SENDERS = [                   // Dominios/remitentes a NUNCA tocar
+  "linkedin.com", "google.com",
+  "bancochile.cl", "bancoestado.cl",         // Bancos chilenos incluidos
+  // ... (lista completa en el script)
 ];
+
+const UNSUBSCRIBE_ONLY_SENDERS = [           // Desuscribir pero CONSERVAR correos
+  // "newsletter@blog.com",
+];
+
 const CLEANUP_BLOCKED_SENDERS = [];          // Remitentes a SIEMPRE eliminar
 
 // ── Ajustes de Eliminar Todo (opción nuclear) ──────────────
 
 const DELETE_ALL_OLDER_THAN = 1;             // ¿Qué tan antiguos? (número)
 const DELETE_ALL_OLDER_THAN_UNIT = "years";  // "days", "months", o "years"
-const DELETE_ALL_EXCLUDED_SENDERS = [        // Dominios/remitentes a CONSERVAR
-  "linkedin.com",
-  "google.com",
-  "anthropic.com",
-];
 
 // ── General ────────────────────────────────────────────────
 
+const EMPTY_SPAM = true;                     // ¿Vaciar carpeta de spam en cada ejecución?
 const PERMANENT_DELETE = false;              // false = papelera, true = eliminado para siempre
 const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 ```
 
 ---
 
-## Log de Desuscripciones
+## Pestañas de Google Sheets
 
-Cada intento de desuscripción se registra en una hoja de Google Sheets llamada **"Gmail Cleanup Log"** (se crea automáticamente en tu Google Drive):
+El script crea automáticamente una hoja **"Gmail Cleanup Log"** en tu Google Drive con tres pestañas:
 
-| Fecha | De | Método | Destino de Desuscripción | Estado |
-|-------|-----|--------|--------------------------|--------|
-| 2025-01-15 | `news@example.com` | HTTP | `https://example.com/unsub/...` | Success |
-| 2025-01-15 | `promo@store.com` | mailto | `unsub@store.com` | Success |
+| Pestaña | Propósito |
+|---------|-----------|
+| **Unsubscribe Log** | Registro de cada intento de desuscripción (fecha, remitente, método, estado) |
+| **Excluded Senders** | Agrega dominios/correos aquí para excluirlos de eliminación — sin tocar código |
+| **Unsubscribe Only** | Agrega dominios/correos aquí para desuscribirte pero conservar sus correos |
+
+Solo escribe un dominio (ej. `mibanco.cl`) o correo en la columna A y el script lo detecta en la siguiente ejecución.
 
 ---
 
@@ -139,27 +163,32 @@ Cada intento de desuscripción se registra en una hoja de Google Sheets llamada 
 
 | Función | Descripción |
 |---------|-------------|
-| `cleanupInbox()` | Limpieza principal — elimina promociones/newsletters y desuscribe |
-| `dryRun()` | Modo simulación — muestra qué se eliminaría sin ejecutar nada |
+| `cleanupInbox()` | Limpieza principal — elimina promociones/newsletters, desuscribe y purga spam |
+| `dryRun()` | Modo simulación — muestra qué pasaría sin ejecutar nada |
 | `cleanupBlockedSenders()` | Elimina correos de tu lista de remitentes bloqueados |
-| `deleteAllEmails()` | Opción nuclear — elimina TODOS los correos (respeta su propia config de antigüedad/exclusiones) |
+| `deleteAllEmails()` | Opción nuclear — elimina TODOS los correos (respeta exclusiones y antigüedad) |
 | `deleteAllEmailsDryRun()` | Modo simulación para `deleteAllEmails()` |
 | `setupDailyTrigger()` | Configura ejecución automática diaria a las 2-3 AM |
 
 ---
 
-## Cómo Funciona la Desuscripción
+## Cómo Decide Qué Hacer
 
 ```
 Correo encontrado en bandeja
   │
-  ├─ ¿Tiene header List-Unsubscribe-Post? → Solicitud POST (RFC 8058 one-click)
+  ├─ ¿Remitente en lista EXCLUIDOS? → Omitir (no desuscribir, no eliminar)
   │
-  ├─ ¿Tiene List-Unsubscribe con HTTPS? → Solicitud GET a la URL de desuscripción
+  ├─ ¿Remitente en lista SOLO DESUSCRIBIR? → Desuscribir, pero conservar correo
   │
-  ├─ ¿Tiene List-Unsubscribe con mailto? → Envía correo de desuscripción
-  │
-  └─ Sin header encontrado → Omite desuscripción, igual elimina/mueve a papelera
+  └─ Comportamiento por defecto:
+       │
+       ├─ ¿Tiene header List-Unsubscribe-Post? → POST (RFC 8058 one-click)
+       ├─ ¿Tiene List-Unsubscribe con HTTPS?   → Solicitud GET
+       ├─ ¿Tiene List-Unsubscribe con mailto?  → Envía correo de desuscripción
+       └─ ¿Sin header? → Omitir desuscripción
+       │
+       └─ Eliminar / mover a papelera
 ```
 
 ---
