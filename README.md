@@ -1,4 +1,8 @@
 <p align="center">
+  <a href="README.md">English</a> · <a href="README.es.md">Español</a>
+</p>
+
+<p align="center">
   <img src="https://img.icons8.com/color/96/gmail--v1.png" alt="Gmail Cleanup Logo" width="96"/>
 </p>
 
@@ -40,6 +44,20 @@ A Google Apps Script that automatically cleans your Gmail inbox by removing old 
 
 ---
 
+## What Gets Targeted
+
+The script uses three search queries to find emails to clean up:
+
+| Query | What it catches | Examples |
+|-------|----------------|----------|
+| `category:promotions` | Gmail's Promotions tab | Marketing emails, deals, ads |
+| Subject/label patterns | Emails with `unsubscribe`, `newsletter`, `digest`, `weekly`, `bulletin` in subject | Newsletters, weekly digests |
+| Sender patterns | Emails from `noreply`, `no-reply`, `newsletter`, `marketing`, `promo`, `info@`, `news@` | Automated notifications, marketing blasts |
+
+> **Note:** The sender patterns query can match legitimate transactional emails (e.g., order confirmations from `noreply@`). Use `EXCLUDED_SENDERS` to whitelist domains you want to keep, and always run `dryRun()` first to verify what would be deleted.
+
+---
+
 ## Quick Start
 
 ### 1. Create the Script
@@ -77,7 +95,7 @@ All settings are in the `CONFIG` object at the top of the script:
 
 ```javascript
 const CONFIG = {
-  BATCH_SIZE: 1000,           // Threads per batch
+  BATCH_SIZE: 500,            // Threads per batch (max allowed by Gmail API)
   PERMANENT_DELETE: false,     // false = trash, true = permanent delete
   AUTO_UNSUBSCRIBE: true,      // Attempt auto-unsubscribe before deleting
   OLDER_THAN_DAYS: 365,        // Only process emails older than this (0 = all)
