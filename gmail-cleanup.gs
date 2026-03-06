@@ -62,6 +62,24 @@ const EXCLUDED_SENDERS = [
   "bancointernacional.cl",
   "coopeuch.cl",
   "tenpo.cl",
+
+  // ── Chilean Health (ISAPREs, clinics, hospitals) ──
+  "fonasa.cl",
+  "colmena.cl",
+  "cruzblanca.cl",
+  "banmedica.cl",
+  "vidatres.cl",
+  "nuevamasvida.cl",
+  "redsalud.cl",
+  "integramedica.cl",
+  "megasalud.cl",
+  "alemana.cl",
+  "uccristus.cl",
+  "clinicasantamaria.cl",
+  "clinicalascondes.cl",
+  "indisa.cl",
+  "davila.cl",
+  "biomerieux.cl",
 ];
 
 // ── Unsubscribe Only (unsub but keep emails) ───────────────
@@ -290,7 +308,12 @@ function dryRun() {
       const msg = thread.getMessages()[0];
       const from = msg.getFrom();
 
-      if (isExcluded_(msg)) continue;
+      if (isExcluded_(msg)) {
+        if (isHealthRelated_(msg)) {
+          Logger.log(`[SKIP - HEALTH] From: ${from} | Subject: ${msg.getSubject()}`);
+        }
+        continue;
+      }
 
       seen.add(id);
 
@@ -564,14 +587,42 @@ function tryUnsubscribe_(message) {
   return false;
 }
 
+// Health-related keywords (Spanish + English) for dynamic detection
+const HEALTH_KEYWORDS_ = [
+  // Spanish
+  "clinica", "clínica", "hospital", "medic", "médic", "doctor", "doctora",
+  "salud", "dental", "odontologo", "odontólogo", "laboratorio", "farmacia",
+  "isapre", "fonasa", "consulta medica", "consulta médica", "examen",
+  "radiologia", "radiología", "oftalmolog", "dermatolog", "pediatr",
+  "ginecolog", "cardiolog", "neurolog", "traumatolog", "kinesio",
+  "nutricion", "nutrición", "psicolog", "psiquiatr", "urgencia",
+  "receta", "hora medica", "hora médica", "resultado examen",
+  // English
+  "clinic", "hospital", "medical", "healthcare", "health care",
+  "doctor", "physician", "pharmacy", "dental", "laboratory",
+  "diagnosis", "prescription", "appointment",
+];
+
 /**
- * Checks if a sender is excluded (hardcoded + dynamic from sheet).
+ * Checks if a sender is excluded (hardcoded + dynamic from sheet + health detection).
  */
 function isExcluded_(message) {
   const from = message.getFrom().toLowerCase();
   const hardcoded = CONFIG.EXCLUDED_SENDERS.some((exc) => from.includes(exc));
   if (hardcoded) return true;
-  return getDynamicExcluded_().some((exc) => from.includes(exc));
+  if (getDynamicExcluded_().some((exc) => from.includes(exc))) return true;
+  return isHealthRelated_(message);
+}
+
+/**
+ * Detects health-related emails by scanning sender name, email, and subject.
+ */
+function isHealthRelated_(message) {
+  const from = message.getFrom().toLowerCase();
+  const subject = message.getSubject().toLowerCase();
+  const text = from + " " + subject;
+
+  return HEALTH_KEYWORDS_.some((kw) => text.includes(kw));
 }
 
 /**

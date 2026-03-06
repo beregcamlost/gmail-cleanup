@@ -43,6 +43,7 @@ A Google Apps Script that automatically cleans your Gmail inbox by removing old 
 | **Persistent Log** | Every unsubscribe action is logged to a Google Sheet for full traceability |
 | **Dry Run Mode** | Preview what would be deleted before pulling the trigger |
 | **Daily Automation** | Optional time-based trigger for hands-free daily cleanup |
+| **Health Detection** | Automatically protects health-related emails (clinics, doctors, hospitals, ISAPREs) via keyword detection |
 | **Blocked Senders** | Maintain a blocklist for senders you always want nuked |
 
 ---
@@ -179,6 +180,7 @@ Just type a domain (e.g., `mybank.com`) or email in column A and the script pick
 Email found in inbox
   │
   ├─ Sender in EXCLUDED list? → Skip entirely (no unsub, no delete)
+  ├─ Health-related email?    → Skip (auto-detected by keywords in sender/subject)
   │
   ├─ Sender in UNSUB ONLY list? → Unsubscribe, but keep the email
   │

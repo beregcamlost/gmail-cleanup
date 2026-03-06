@@ -43,6 +43,7 @@ Un script de Google Apps Script que limpia automáticamente tu bandeja de Gmail 
 | **Log Persistente** | Cada acción de desuscripción se registra en una hoja de Google Sheets |
 | **Modo Simulación** | Previsualiza qué se eliminaría antes de ejecutar |
 | **Automatización Diaria** | Trigger programado opcional para limpieza diaria automática |
+| **Detección de Salud** | Protege automáticamente correos de salud (clínicas, doctores, hospitales, ISAPREs) via detección de palabras clave |
 | **Remitentes Bloqueados** | Mantén una lista de remitentes que siempre quieres eliminar |
 
 ---
@@ -179,6 +180,7 @@ Solo escribe un dominio (ej. `mibanco.cl`) o correo en la columna A y el script 
 Correo encontrado en bandeja
   │
   ├─ ¿Remitente en lista EXCLUIDOS? → Omitir (no desuscribir, no eliminar)
+  ├─ ¿Correo de salud?              → Omitir (detectado por palabras clave en remitente/asunto)
   │
   ├─ ¿Remitente en lista SOLO DESUSCRIBIR? → Desuscribir, pero conservar correo
   │
