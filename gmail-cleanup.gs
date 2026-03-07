@@ -806,36 +806,50 @@ const HEALTH_KEYWORDS_ = [
   // Spanish
   "clinica", "hospital", "medic", "doctor", "doctora",
   "salud", "dental", "odontologo", "laboratorio", "farmacia",
-  "isapre", "fonasa", "consulta medica", "examen",
-  "radiologia", "oftalmolog", "dermatolog", "pediatr",
-  "ginecolog", "cardiolog", "neurolog", "traumatolog", "kinesio",
-  "nutricion", "psicolog", "psiquiatr", "urgencia",
-  "receta", "hora medica", "resultado examen",
+  "consulta medica", "examen", "radiologia", "oftalmolog",
+  "dermatolog", "pediatr", "ginecolog", "cardiolog", "neurolog",
+  "traumatolog", "kinesio", "nutricion", "psicolog", "psiquiatr",
+  "urgencia", "receta", "hora medica", "resultado examen",
+  "seguro medico", "eps", "isapre", "prepaga", "obra social",
+  "vacuna", "cirugia", "terapia", "rehabilitacion", "oncolog",
+  "hematolog", "endocrin", "urol", "nefrol", "neumolog",
+  "gastroenterolog", "reumatolog", "infectolog", "anestesi",
+  "emergencia", "ambulancia", "quirofano", "internacion",
   // English
   "clinic", "hospital", "medical", "healthcare", "health care",
   "doctor", "physician", "pharmacy", "dental", "laboratory",
-  "diagnosis", "prescription", "appointment",
+  "diagnosis", "prescription", "appointment", "health insurance",
+  "vaccine", "surgery", "therapy", "rehabilitation", "oncolog",
+  "hematolog", "endocrin", "urolog", "nephrolog", "pulmonolog",
+  "gastroenterolog", "rheumatolog", "anesthesi", "emergency",
+  "ambulance", "radiology", "pathology", "dermatolog", "pediatr",
+  "gynecolog", "cardiolog", "neurolog", "psychiatr", "psycholog",
+  "orthoped", "ophthalmolog", "nutritio",
 ];
 
 const GOVERNMENT_KEYWORDS_ = [
   // Spanish
   "gobierno", "ministerio", "municipalidad", "municipio",
-  "servicio publico", "registro civil", "sii", "tesoreria",
+  "servicio publico", "registro civil", "tesoreria",
   "contraloria", "intendencia", "gobernacion", "subsecretaria",
-  "secretaria", "congreso", "senado", "camara de diputados",
-  "poder judicial", "fiscalia", "defensoria", "servel",
-  "servicio electoral", "aduanas", "sernac", "sence",
-  "serviu", "minvu", "minsal", "mineduc", "mintrab",
-  "carabineros", "policia", "investigaciones", "pdi",
-  "bomberos", "impuestos internos", "estado", "gob.cl",
-  "tributario", "fiscal", "notaria", "conservador de bienes",
+  "secretaria de estado", "congreso", "senado", "camara de diputados",
+  "poder judicial", "fiscalia", "defensoria", "servicio electoral",
+  "aduanas", "impuestos", "tributario", "fiscal", "notaria",
+  "policia", "bomberos", "defensa civil", "fuerzas armadas",
+  "alcaldia", "prefectura", "procuraduria", "superintendencia",
+  "contaduria", "hacienda publica", "tesoro nacional",
+  "registro publico", "catastro", "censo", "presupuesto nacional",
+  "gaceta oficial", "boletin oficial", "decreto", "ley",
   // English
   "government", "ministry", "municipality", "public service",
   "civil registry", "treasury", "congress", "senate",
   "judiciary", "prosecutor", "customs", "electoral",
-  "tax authority", "internal revenue", "irs", "federal",
-  "state department", "city hall", "county", "dmv",
-  "social security", "public defender", "notary public",
+  "tax authority", "internal revenue", "federal", "state department",
+  "city hall", "county", "public defender", "notary public",
+  "police", "fire department", "civil defense", "armed forces",
+  "mayor office", "prefecture", "comptroller", "superintendent",
+  "public registry", "census", "national budget",
+  "official gazette", "executive order", "legislation",
 ];
 
 const IMMIGRATION_KEYWORDS_ = [
@@ -843,10 +857,12 @@ const IMMIGRATION_KEYWORDS_ = [
   "migracion", "migraciones", "extranjeria", "visa",
   "residencia", "permanencia definitiva", "permiso de trabajo",
   "refugio", "asilo", "pasaporte", "cedula de identidad",
-  "rut", "apostilla", "consulado", "embajada", "legalizacion",
+  "apostilla", "consulado", "embajada", "legalizacion",
   "nacionalidad", "ciudadania", "deportacion", "expulsion",
   "repatriacion", "frontera", "aduana", "tramite migratorio",
   "permiso de residencia", "tarjeta de residencia",
+  "documento de viaje", "estatus migratorio", "refugiado",
+  "acta de nacimiento", "certificado consular",
   // English
   "immigration", "migration", "visa", "residency", "residence permit",
   "work permit", "green card", "asylum", "refugee",
@@ -854,6 +870,7 @@ const IMMIGRATION_KEYWORDS_ = [
   "citizenship", "naturalization", "deportation", "border",
   "travel document", "entry permit", "immigration status",
   "permanent residence", "temporary residence",
+  "birth certificate", "consular certificate", "apostille",
 ];
 
 const LEGAL_KEYWORDS_ = [
@@ -869,7 +886,8 @@ const LEGAL_KEYWORDS_ = [
   "cautelar", "embargo", "hipoteca", "testamento",
   "herencia", "sucesion", "divorcio", "pension alimenticia",
   "tutela", "curatela", "patente", "marca registrada",
-  "propiedad intelectual", "litigio",
+  "propiedad intelectual", "litigio", "jurisdiccion",
+  "jurisprudencia", "amparo", "habeas corpus", "acta notarial",
   // English
   "attorney", "lawyer", "law firm", "legal", "court",
   "supreme court", "tribunal", "lawsuit", "litigation",
@@ -879,8 +897,39 @@ const LEGAL_KEYWORDS_ = [
   "paralegal", "solicitor", "barrister", "prosecutor",
   "defendant", "plaintiff", "appeal", "injunction",
   "custody", "divorce", "alimony", "child support",
-  "probate", "estate", "will", "trust", "trademark",
-  "intellectual property", "patent", "copyright",
+  "probate", "estate", "trademark", "intellectual property",
+  "patent", "copyright", "jurisdiction", "jurisprudence",
+  "habeas corpus", "notarial",
+];
+
+const EDUCATION_KEYWORDS_ = [
+  // Spanish
+  "universidad", "facultad", "escuela", "colegio", "instituto",
+  "liceo", "jardin infantil", "preescolar", "kinder",
+  "educacion", "academico", "academia", "docente", "profesor",
+  "profesora", "rector", "decano", "matricula", "beca",
+  "calificacion", "notas", "examen", "tesis", "maestria",
+  "doctorado", "licenciatura", "postgrado", "posgrado",
+  "diplomado", "certificacion", "curso", "seminario",
+  "biblioteca", "campus", "aula virtual", "plataforma educativa",
+  "moodle", "blackboard", "canvas", "classroom",
+  "ministerio de educacion", "secretaria de educacion",
+  "consejo escolar", "junta escolar", "acreditacion",
+  "curriculo", "pensum", "semestre", "trimestre",
+  "inscripcion", "admision", "egresado", "graduacion",
+  "titulo", "diploma", "carrera universitaria",
+  // English
+  "university", "college", "school", "institute", "academy",
+  "faculty", "campus", "kindergarten", "preschool",
+  "education", "academic", "teacher", "professor",
+  "dean", "rector", "provost", "tuition", "scholarship",
+  "grade", "transcript", "exam", "thesis", "dissertation",
+  "master", "doctorate", "bachelor", "postgraduate",
+  "certification", "course", "seminar", "library",
+  "virtual classroom", "learning platform", "e-learning",
+  "ministry of education", "school board", "accreditation",
+  "curriculum", "semester", "quarter", "enrollment",
+  "admission", "alumni", "graduation", "degree", "diploma",
 ];
 
 /**
@@ -913,6 +962,9 @@ function getExclusionReason_(message) {
   const legalMatch = LEGAL_KEYWORDS_.find((kw) => text.includes(kw));
   if (legalMatch) return `Legal detected (${legalMatch})`;
 
+  const eduMatch = EDUCATION_KEYWORDS_.find((kw) => text.includes(kw));
+  if (eduMatch) return `Education detected (${eduMatch})`;
+
   return null;
 }
 
@@ -936,7 +988,8 @@ function isProtectedByKeywords_(message) {
   return HEALTH_KEYWORDS_.some((kw) => text.includes(kw))
     || GOVERNMENT_KEYWORDS_.some((kw) => text.includes(kw))
     || IMMIGRATION_KEYWORDS_.some((kw) => text.includes(kw))
-    || LEGAL_KEYWORDS_.some((kw) => text.includes(kw));
+    || LEGAL_KEYWORDS_.some((kw) => text.includes(kw))
+    || EDUCATION_KEYWORDS_.some((kw) => text.includes(kw));
 }
 
 /**
