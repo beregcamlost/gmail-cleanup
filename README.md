@@ -61,7 +61,7 @@ Everything goes to Trash (recoverable for 30 days) — nothing is permanently de
 | **Persistent Log** | Every unsubscribe action is logged to a Google Sheet for full traceability |
 | **Dry Run Mode** | Preview what would be deleted before pulling the trigger |
 | **Daily Automation** | Optional time-based trigger for hands-free daily cleanup |
-| **Smart Protection** | Automatically protects health, government, immigration, legal, and education emails via keyword detection (ES + EN) |
+| **Smart Protection** | Automatically protects health, government, immigration, legal, education, and transactional emails (purchases, receipts, shipping) via keyword detection (ES + EN) |
 | **Blocked Senders** | Maintain a blocklist for senders you always want nuked |
 
 ---
@@ -202,7 +202,7 @@ Just type a domain (e.g., `mybank.com`) or email in column A and the script pick
 Email found in inbox
   │
   ├─ Sender in EXCLUDED list?   → Skip entirely (no unsub, no delete)
-  ├─ Protected email detected? → Skip (health, government, immigration, legal, or education keywords)
+  ├─ Protected email detected? → Skip (health, government, immigration, legal, education, or transactional keywords)
   │
   ├─ Sender in UNSUB ONLY list? → Unsubscribe, but keep the email
   │

@@ -61,7 +61,7 @@ Todo va a la Papelera (recuperable por 30 días) — nada se elimina permanentem
 | **Log Persistente** | Cada acción de desuscripción se registra en una hoja de Google Sheets |
 | **Modo Simulación** | Previsualiza qué se eliminaría antes de ejecutar |
 | **Automatización Diaria** | Trigger programado opcional para limpieza diaria automática |
-| **Protección Inteligente** | Protege automáticamente correos de salud, gobierno, migración, legales y educación via detección de palabras clave (ES + EN) |
+| **Protección Inteligente** | Protege automáticamente correos de salud, gobierno, migración, legales, educación y transaccionales (compras, recibos, envíos) via detección de palabras clave (ES + EN) |
 | **Remitentes Bloqueados** | Mantén una lista de remitentes que siempre quieres eliminar |
 
 ---
@@ -202,7 +202,7 @@ Solo escribe un dominio (ej. `mibanco.cl`) o correo en la columna A y el script 
 Correo encontrado en bandeja
   │
   ├─ ¿Remitente en lista EXCLUIDOS?  → Omitir (no desuscribir, no eliminar)
-  ├─ ¿Correo protegido detectado?   → Omitir (salud, gobierno, migración, legal o educación por palabras clave)
+  ├─ ¿Correo protegido detectado?   → Omitir (salud, gobierno, migración, legal, educación o transaccional por palabras clave)
   │
   ├─ ¿Remitente en lista SOLO DESUSCRIBIR? → Desuscribir, pero conservar correo
   │

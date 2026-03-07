@@ -934,6 +934,41 @@ const EDUCATION_KEYWORDS_ = [
   "admission", "alumni", "graduation", "degree", "diploma",
 ];
 
+const TRANSACTIONAL_KEYWORDS_ = [
+  // Spanish
+  "confirmacion de pedido", "confirmacion de compra", "compra exitosa",
+  "recibo", "factura", "boleta", "comprobante", "comprobante de pago",
+  "orden de compra", "numero de orden", "detalle de compra",
+  "pago recibido", "pago exitoso", "pago confirmado", "pago aprobado",
+  "transferencia exitosa", "transaccion aprobada",
+  "envio", "despacho", "seguimiento", "numero de seguimiento",
+  "tu pedido", "tu orden", "tu compra", "tu paquete", "tu envio",
+  "en camino", "entregado", "entrega programada", "fecha de entrega",
+  "devolucion", "reembolso", "cambio de producto",
+  "suscripcion renovada", "renovacion", "plan contratado",
+  "reserva confirmada", "confirmacion de reserva", "itinerario",
+  "boleto", "pasaje", "entrada", "ticket",
+  "estado de cuenta", "resumen de cuenta", "movimientos",
+  "clave temporal", "codigo de verificacion", "verificacion",
+  "activacion de cuenta", "restablecer contrasena",
+  // English
+  "order confirmation", "purchase confirmation", "order received",
+  "receipt", "invoice", "billing statement", "proof of payment",
+  "order number", "order detail", "purchase detail",
+  "payment received", "payment successful", "payment confirmed",
+  "payment approved", "transaction approved", "transfer successful",
+  "shipping", "shipment", "tracking", "tracking number",
+  "your order", "your purchase", "your package", "your shipment",
+  "on its way", "out for delivery", "delivered", "estimated delivery",
+  "return", "refund", "exchange",
+  "subscription renewed", "renewal", "plan activated",
+  "booking confirmed", "reservation confirmed", "itinerary",
+  "ticket", "boarding pass", "e-ticket",
+  "account statement", "account summary", "account activity",
+  "temporary password", "verification code", "verify your",
+  "account activation", "reset password", "two-factor",
+];
+
 /**
  * Checks if a sender is excluded. Returns the reason string or null.
  */
@@ -967,6 +1002,9 @@ function getExclusionReason_(message) {
   const eduMatch = EDUCATION_KEYWORDS_.find((kw) => text.includes(kw));
   if (eduMatch) return `Education detected (${eduMatch})`;
 
+  const txnMatch = TRANSACTIONAL_KEYWORDS_.find((kw) => text.includes(kw));
+  if (txnMatch) return `Transactional detected (${txnMatch})`;
+
   return null;
 }
 
@@ -991,7 +1029,8 @@ function isProtectedByKeywords_(message) {
     || GOVERNMENT_KEYWORDS_.some((kw) => text.includes(kw))
     || IMMIGRATION_KEYWORDS_.some((kw) => text.includes(kw))
     || LEGAL_KEYWORDS_.some((kw) => text.includes(kw))
-    || EDUCATION_KEYWORDS_.some((kw) => text.includes(kw));
+    || EDUCATION_KEYWORDS_.some((kw) => text.includes(kw))
+    || TRANSACTIONAL_KEYWORDS_.some((kw) => text.includes(kw));
 }
 
 /**
