@@ -34,7 +34,7 @@ A Google Apps Script that automatically cleans your Gmail inbox by removing old 
 
 Out of the box, the script **only** unsubscribes and trashes promotions/newsletters older than **1 day**. Everything else is opt-in:
 
-- Spam cleanup → off
+- Spam cleanup → on (moved to Trash, not permanently deleted)
 - Permanent delete → off (uses Trash, recoverable for 30 days)
 - Delete all emails → off (must explicitly enable)
 - Blocked senders → empty list
@@ -150,7 +150,7 @@ const DELETE_ALL_OLDER_THAN_UNIT = "years";  // "days", "months", or "years"
 
 // ── General ────────────────────────────────────────────────
 
-const EMPTY_SPAM = false;                    // Empty spam folder on each run?
+const EMPTY_SPAM = true;                     // Clean spam folder on each run?
 const PERMANENT_DELETE = false;              // false = trash, true = gone forever
 const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 ```

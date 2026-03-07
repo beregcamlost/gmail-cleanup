@@ -298,10 +298,10 @@ const DELETE_ALL_OLDER_THAN_UNIT = "years"; // "days", "months", or "years"
 
 // ── General Settings ───────────────────────────────────────
 
-// Also empty the Spam folder on each run?
-// true  = yes, permanently delete all spam
+// Also clean the Spam folder on each run?
+// true  = yes, move spam to trash (or permanently delete if PERMANENT_DELETE is true)
 // false = no, leave spam alone
-const EMPTY_SPAM = false;
+const EMPTY_SPAM = true;
 
 // What happens to deleted emails?
 // false = move to Trash (you can recover them for 30 days)
@@ -980,12 +980,16 @@ function emptySpam_() {
   do {
     threads = GmailApp.search("in:spam", 0, CONFIG.BATCH_SIZE);
     for (const thread of threads) {
-      Gmail.Users.Threads.remove("me", thread.getId());
+      if (CONFIG.PERMANENT_DELETE) {
+        Gmail.Users.Threads.remove("me", thread.getId());
+      } else {
+        thread.moveToTrash();
+      }
       totalDeleted++;
     }
   } while (threads.length === CONFIG.BATCH_SIZE);
 
-  Logger.log(`Spam folder emptied: ${totalDeleted} threads permanently deleted.`);
+  Logger.log(`Spam cleanup: ${totalDeleted} threads ${CONFIG.PERMANENT_DELETE ? "permanently deleted" : "moved to trash"}.`);
   return totalDeleted;
 }
 

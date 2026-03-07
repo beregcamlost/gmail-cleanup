@@ -34,7 +34,7 @@ Un script de Google Apps Script que limpia automáticamente tu bandeja de Gmail 
 
 De fábrica, el script **solo** desuscribe y mueve a la papelera promociones/newsletters con más de **1 día** de antigüedad. Todo lo demás es opcional:
 
-- Limpieza de spam → desactivada
+- Limpieza de spam → activada (se mueve a Papelera, no se elimina permanentemente)
 - Eliminación permanente → desactivada (usa Papelera, recuperable por 30 días)
 - Eliminar todos los correos → desactivado (hay que habilitarlo explícitamente)
 - Remitentes bloqueados → lista vacía
@@ -150,7 +150,7 @@ const DELETE_ALL_OLDER_THAN_UNIT = "years";  // "days", "months", o "years"
 
 // ── General ────────────────────────────────────────────────
 
-const EMPTY_SPAM = false;                    // ¿Vaciar carpeta de spam en cada ejecución?
+const EMPTY_SPAM = true;                     // ¿Limpiar carpeta de spam en cada ejecución?
 const PERMANENT_DELETE = false;              // false = papelera, true = eliminado para siempre
 const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 ```
