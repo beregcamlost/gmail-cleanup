@@ -43,6 +43,8 @@ const EXCLUDED_SENDERS = [
   "linkedin.com",
   "google.com",
   "anthropic.com",
+  "github.com",
+  "gitlab.com",
   // Add more here, e.g.:
   // "amazon.com",
   // "mom@gmail.com",
