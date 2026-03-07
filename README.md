@@ -139,7 +139,8 @@ const CLEANUP_OLDER_THAN_UNIT = "days";      // "days", "months", or "years"
 const CLEANUP_AUTO_UNSUBSCRIBE = true;       // Unsubscribe before deleting?
 
 const EXCLUDED_SENDERS = [                   // Domains/senders to NEVER touch
-  "linkedin.com", "google.com",
+  "linkedin.com", "google.com", "anthropic.com",
+  "github.com", "gitlab.com",
   // Chilean, Colombian, Venezuelan institutions included:
   // banks, health, government, immigration, legal
   // ... (full list in script)
