@@ -32,12 +32,21 @@ A Google Apps Script that automatically cleans your Gmail inbox by removing old 
 
 ### Safe by Default
 
-Out of the box, the script **only** unsubscribes and trashes promotions/newsletters older than **1 day**. Everything else is opt-in:
+Out of the box, the script does two things:
 
-- Spam cleanup → on (moved to Trash, not permanently deleted)
-- Permanent delete → off (uses Trash, recoverable for 30 days)
-- Delete all emails → off (must explicitly enable)
-- Blocked senders → empty list
+1. **Unsubscribes and trashes promotions/newsletters** older than **1 day**
+2. **Moves spam to Trash**
+
+Everything goes to Trash (recoverable for 30 days) — nothing is permanently deleted. All other features are opt-in:
+
+| Setting | Default | What it does |
+|---------|---------|-------------|
+| `CLEANUP_AUTO_UNSUBSCRIBE` | `true` | Unsubscribe before trashing promotions |
+| `CLEANUP_OLDER_THAN` | `1 day` | Age threshold for promotion cleanup |
+| `EMPTY_SPAM` | `true` | Move spam to Trash on each run |
+| `PERMANENT_DELETE` | `false` | Use Trash (not permanent delete) |
+| `ENABLE_DELETE_ALL` | `false` | Nuclear delete-all function (disabled) |
+| `CLEANUP_BLOCKED_SENDERS` | `[]` | Blocklist (empty) |
 
 ### Features
 
@@ -48,7 +57,7 @@ Out of the box, the script **only** unsubscribes and trashes promotions/newslett
 | **Sender Exclusions** | Whitelist domains you want to keep — hardcoded (CL/CO/VE institutions included) or managed via Google Sheet |
 | **Unsubscribe Only** | Unsubscribe from senders but keep their emails (great for newsletters you want to archive) |
 | **Dynamic Lists** | Add/remove excluded or unsub-only senders directly from the Google Sheet — no code changes |
-| **Spam Cleanup** | Optionally empties the Spam folder on every run |
+| **Spam Cleanup** | Moves spam to Trash on every run (enabled by default, respects `PERMANENT_DELETE`) |
 | **Persistent Log** | Every unsubscribe action is logged to a Google Sheet for full traceability |
 | **Dry Run Mode** | Preview what would be deleted before pulling the trigger |
 | **Daily Automation** | Optional time-based trigger for hands-free daily cleanup |

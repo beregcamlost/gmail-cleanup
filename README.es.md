@@ -32,12 +32,21 @@ Un script de Google Apps Script que limpia automáticamente tu bandeja de Gmail 
 
 ### Seguro por Defecto
 
-De fábrica, el script **solo** desuscribe y mueve a la papelera promociones/newsletters con más de **1 día** de antigüedad. Todo lo demás es opcional:
+De fábrica, el script hace dos cosas:
 
-- Limpieza de spam → activada (se mueve a Papelera, no se elimina permanentemente)
-- Eliminación permanente → desactivada (usa Papelera, recuperable por 30 días)
-- Eliminar todos los correos → desactivado (hay que habilitarlo explícitamente)
-- Remitentes bloqueados → lista vacía
+1. **Desuscribe y mueve a la papelera promociones/newsletters** con más de **1 día** de antigüedad
+2. **Mueve el spam a la Papelera**
+
+Todo va a la Papelera (recuperable por 30 días) — nada se elimina permanentemente. Las demás funciones son opcionales:
+
+| Ajuste | Valor por defecto | Qué hace |
+|--------|-------------------|----------|
+| `CLEANUP_AUTO_UNSUBSCRIBE` | `true` | Desuscribir antes de mover promociones a papelera |
+| `CLEANUP_OLDER_THAN` | `1 día` | Antigüedad mínima para limpieza de promociones |
+| `EMPTY_SPAM` | `true` | Mover spam a Papelera en cada ejecución |
+| `PERMANENT_DELETE` | `false` | Usar Papelera (no eliminar permanentemente) |
+| `ENABLE_DELETE_ALL` | `false` | Función nuclear de eliminar todo (deshabilitada) |
+| `CLEANUP_BLOCKED_SENDERS` | `[]` | Lista de bloqueados (vacía) |
 
 ### Características
 
@@ -48,7 +57,7 @@ De fábrica, el script **solo** desuscribe y mueve a la papelera promociones/new
 | **Exclusión de Remitentes** | Lista blanca de dominios que quieres conservar — incluye instituciones de CL/CO/VE, o gestiona desde Google Sheets |
 | **Solo Desuscribir** | Desuscribirse de remitentes pero conservar sus correos (ideal para newsletters que quieres archivar) |
 | **Listas Dinámicas** | Agregar/quitar remitentes excluidos o solo-desuscribir directamente desde Google Sheets |
-| **Limpieza de Spam** | Opcionalmente vacía la carpeta de Spam en cada ejecución |
+| **Limpieza de Spam** | Mueve el spam a la Papelera en cada ejecución (activado por defecto, respeta `PERMANENT_DELETE`) |
 | **Log Persistente** | Cada acción de desuscripción se registra en una hoja de Google Sheets |
 | **Modo Simulación** | Previsualiza qué se eliminaría antes de ejecutar |
 | **Automatización Diaria** | Trigger programado opcional para limpieza diaria automática |
