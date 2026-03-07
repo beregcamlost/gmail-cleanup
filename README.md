@@ -168,14 +168,14 @@ const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 
 ## Google Sheet Tabs
 
-The script auto-creates a **"Gmail Cleanup Log"** spreadsheet in your Google Drive with three tabs:
+The script auto-creates a **"Gmail Cleanup Log"** spreadsheet in your Google Drive with four tabs:
 
-| Tab | Purpose |
-|-----|---------|
-| **Unsubscribe Log** | Log of every unsubscribe attempt (date, sender, method, status) |
-| **Excluded Senders** | Add domains/emails here to exclude from deletion — no code changes needed |
-| **Unsubscribe Only** | Add domains/emails here to unsubscribe but keep their emails |
-| **Protected Senders** | Auto-populated log of senders that were skipped (with reason: bank, health, excluded, etc.) |
+| Tab | Type | Purpose |
+|-----|------|---------|
+| **Unsubscribe Log** | Log | Records every unsubscribe attempt (date, sender, method, status) |
+| **Protected Senders** | Log | Records senders that were skipped during cleanup (with reason: excluded, health, government, etc.) |
+| **Excluded Senders** | Editable | Add domains/emails here to exclude from deletion — no code changes needed |
+| **Unsubscribe Only** | Editable | Add domains/emails here to unsubscribe but keep their emails |
 
 Just type a domain (e.g., `mybank.com`) or email in column A and the script picks it up on the next run.
 

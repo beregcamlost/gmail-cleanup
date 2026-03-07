@@ -168,14 +168,14 @@ const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 
 ## Pestañas de Google Sheets
 
-El script crea automáticamente una hoja **"Gmail Cleanup Log"** en tu Google Drive con tres pestañas:
+El script crea automáticamente una hoja **"Gmail Cleanup Log"** en tu Google Drive con cuatro pestañas:
 
-| Pestaña | Propósito |
-|---------|-----------|
-| **Unsubscribe Log** | Registro de cada intento de desuscripción (fecha, remitente, método, estado) |
-| **Excluded Senders** | Agrega dominios/correos aquí para excluirlos de eliminación — sin tocar código |
-| **Unsubscribe Only** | Agrega dominios/correos aquí para desuscribirte pero conservar sus correos |
-| **Protected Senders** | Log auto-generado de remitentes protegidos (con razón: banco, salud, excluido, etc.) |
+| Pestaña | Tipo | Propósito |
+|---------|------|-----------|
+| **Unsubscribe Log** | Log | Registra cada intento de desuscripción (fecha, remitente, método, estado) |
+| **Protected Senders** | Log | Registra remitentes que fueron omitidos durante la limpieza (con razón: excluido, salud, gobierno, etc.) |
+| **Excluded Senders** | Editable | Agrega dominios/correos aquí para excluirlos de eliminación — sin tocar código |
+| **Unsubscribe Only** | Editable | Agrega dominios/correos aquí para desuscribirte pero conservar sus correos |
 
 Solo escribe un dominio (ej. `mibanco.cl`) o correo en la columna A y el script lo detecta en la siguiente ejecución.
 
