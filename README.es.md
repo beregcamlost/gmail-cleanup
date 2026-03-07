@@ -30,20 +30,29 @@
 
 Un script de Google Apps Script que limpia automáticamente tu bandeja de Gmail eliminando promociones, newsletters y correos de marketing antiguos — y **te desuscribe** de ellos antes de borrarlos.
 
+### Seguro por Defecto
+
+De fábrica, el script **solo** desuscribe y mueve a la papelera promociones/newsletters con más de **1 día** de antigüedad. Todo lo demás es opcional:
+
+- Limpieza de spam → desactivada
+- Eliminación permanente → desactivada (usa Papelera, recuperable por 30 días)
+- Eliminar todos los correos → desactivado (hay que habilitarlo explícitamente)
+- Remitentes bloqueados → lista vacía
+
 ### Características
 
 | Característica | Descripción |
 |----------------|-------------|
 | **Detección Inteligente** | Detecta la categoría Promociones de Gmail, patrones de newsletters y remitentes de marketing |
 | **Auto-Desuscripción** | Analiza los headers `List-Unsubscribe` y ejecuta tanto endpoints HTTP (RFC 8058 one-click) como mailto |
-| **Exclusión de Remitentes** | Lista blanca de dominios que quieres conservar — en código o desde Google Sheets |
+| **Exclusión de Remitentes** | Lista blanca de dominios que quieres conservar — incluye instituciones de CL/CO/VE, o gestiona desde Google Sheets |
 | **Solo Desuscribir** | Desuscribirse de remitentes pero conservar sus correos (ideal para newsletters que quieres archivar) |
 | **Listas Dinámicas** | Agregar/quitar remitentes excluidos o solo-desuscribir directamente desde Google Sheets |
 | **Limpieza de Spam** | Opcionalmente vacía la carpeta de Spam en cada ejecución |
 | **Log Persistente** | Cada acción de desuscripción se registra en una hoja de Google Sheets |
 | **Modo Simulación** | Previsualiza qué se eliminaría antes de ejecutar |
 | **Automatización Diaria** | Trigger programado opcional para limpieza diaria automática |
-| **Detección de Salud** | Protege automáticamente correos de salud (clínicas, doctores, hospitales, ISAPREs) via detección de palabras clave |
+| **Protección Inteligente** | Protege automáticamente correos de salud, gobierno, migración y legales via detección de palabras clave (ES + EN) |
 | **Remitentes Bloqueados** | Mantén una lista de remitentes que siempre quieres eliminar |
 
 ---
@@ -116,13 +125,14 @@ Todos los ajustes están claramente etiquetados al **inicio del script** — es 
 ```javascript
 // ── Ajustes de Limpieza ────────────────────────────────────
 
-const CLEANUP_OLDER_THAN = 3;                // ¿Qué tan antiguos? (número)
-const CLEANUP_OLDER_THAN_UNIT = "years";     // "days", "months", o "years"
+const CLEANUP_OLDER_THAN = 1;                // ¿Qué tan antiguos? (número)
+const CLEANUP_OLDER_THAN_UNIT = "days";      // "days", "months", o "years"
 const CLEANUP_AUTO_UNSUBSCRIBE = true;       // ¿Desuscribirse antes de eliminar?
 
 const EXCLUDED_SENDERS = [                   // Dominios/remitentes a NUNCA tocar
   "linkedin.com", "google.com",
-  "bancochile.cl", "bancoestado.cl",         // Bancos chilenos incluidos
+  // Instituciones de Chile, Colombia y Venezuela incluidas:
+  // bancos, salud, gobierno, migración, legal
   // ... (lista completa en el script)
 ];
 
@@ -134,12 +144,13 @@ const CLEANUP_BLOCKED_SENDERS = [];          // Remitentes a SIEMPRE eliminar
 
 // ── Ajustes de Eliminar Todo (opción nuclear) ──────────────
 
-const DELETE_ALL_OLDER_THAN = 1;             // ¿Qué tan antiguos? (número)
+const ENABLE_DELETE_ALL = false;             // ¿Habilitar la función deleteAllEmails?
+const DELETE_ALL_OLDER_THAN = 5;             // ¿Qué tan antiguos? (número)
 const DELETE_ALL_OLDER_THAN_UNIT = "years";  // "days", "months", o "years"
 
 // ── General ────────────────────────────────────────────────
 
-const EMPTY_SPAM = true;                     // ¿Vaciar carpeta de spam en cada ejecución?
+const EMPTY_SPAM = false;                    // ¿Vaciar carpeta de spam en cada ejecución?
 const PERMANENT_DELETE = false;              // false = papelera, true = eliminado para siempre
 const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 ```
@@ -168,8 +179,8 @@ Solo escribe un dominio (ej. `mibanco.cl`) o correo en la columna A y el script 
 | `cleanupInbox()` | Limpieza principal — elimina promociones/newsletters, desuscribe y purga spam |
 | `dryRun()` | Modo simulación — muestra qué pasaría sin ejecutar nada |
 | `cleanupBlockedSenders()` | Elimina correos de tu lista de remitentes bloqueados |
-| `deleteAllEmails()` | Opción nuclear — elimina TODOS los correos (respeta exclusiones y antigüedad) |
-| `deleteAllEmailsDryRun()` | Modo simulación para `deleteAllEmails()` |
+| `deleteAllEmails()` | Opción nuclear — elimina TODOS los correos (deshabilitado por defecto, activar con `ENABLE_DELETE_ALL = true`) |
+| `deleteAllEmailsDryRun()` | Modo simulación para `deleteAllEmails()` (también requiere `ENABLE_DELETE_ALL = true`) |
 | `setupSheet()` | Crea/actualiza las pestañas de Google Sheets y sincroniza valores del script |
 | `setupDailyTrigger()` | Configura ejecución automática diaria a las 2-3 AM |
 
@@ -180,8 +191,8 @@ Solo escribe un dominio (ej. `mibanco.cl`) o correo en la columna A y el script 
 ```
 Correo encontrado en bandeja
   │
-  ├─ ¿Remitente en lista EXCLUIDOS? → Omitir (no desuscribir, no eliminar)
-  ├─ ¿Correo de salud?              → Omitir (detectado por palabras clave en remitente/asunto)
+  ├─ ¿Remitente en lista EXCLUIDOS?  → Omitir (no desuscribir, no eliminar)
+  ├─ ¿Correo protegido detectado?   → Omitir (salud, gobierno, migración o legal por palabras clave)
   │
   ├─ ¿Remitente en lista SOLO DESUSCRIBIR? → Desuscribir, pero conservar correo
   │

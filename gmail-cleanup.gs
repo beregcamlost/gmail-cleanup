@@ -27,8 +27,8 @@
 //           6 "months" = older than 6 months
 //           90 "days"  = older than 90 days
 //           0 (any)    = delete all matching emails regardless of age
-const CLEANUP_OLDER_THAN = 3;
-const CLEANUP_OLDER_THAN_UNIT = "years"; // "days", "months", or "years"
+const CLEANUP_OLDER_THAN = 1;
+const CLEANUP_OLDER_THAN_UNIT = "days"; // "days", "months", or "years"
 
 // Should the script try to unsubscribe you from mailing lists?
 // true  = yes, unsubscribe before deleting
@@ -46,6 +46,10 @@ const EXCLUDED_SENDERS = [
   // Add more here, e.g.:
   // "amazon.com",
   // "mom@gmail.com",
+
+  // ════════════════════════════════════════════════════════════
+  // CHILE (.cl)
+  // ════════════════════════════════════════════════════════════
 
   // ── Chilean Banks ──
   "bancochile.cl",
@@ -80,6 +84,181 @@ const EXCLUDED_SENDERS = [
   "indisa.cl",
   "davila.cl",
   "biomerieux.cl",
+
+  // ── Chilean Government ──
+  "gob.cl",
+  "sii.cl",
+  "tesoreria.cl",
+  "registrocivil.cl",
+  "chileatiende.cl",
+  "contraloria.cl",
+  "servel.cl",
+  "sernac.cl",
+  "sence.cl",
+  "serviu.cl",
+  "minvu.cl",
+  "minsal.cl",
+  "mineduc.cl",
+  "mintrab.cl",
+  "minjusticia.cl",
+  "interior.gob.cl",
+  "hacienda.cl",
+  "defensoria.cl",
+  "fiscaliadechile.cl",
+  "poderjudicial.cl",
+  "senado.cl",
+  "camara.cl",
+  "bcn.cl",
+  "carabineros.cl",
+  "investigaciones.cl",
+  "bomberos.cl",
+  "ips.gob.cl",
+  "previred.com",
+
+  // ── Chilean Immigration ──
+  "extranjeria.gob.cl",
+  "serviciomigraciones.cl",
+  "migraciones.gob.cl",
+
+  // ── Chilean Legal ──
+  "pjud.cl",
+  "dpp.cl",
+  "caj.cl",
+  "notarios.cl",
+
+  // ════════════════════════════════════════════════════════════
+  // COLOMBIA (.co)
+  // ════════════════════════════════════════════════════════════
+
+  // ── Colombian Banks ──
+  "bancolombia.com.co",
+  "davivienda.com",
+  "bancodebogota.com.co",
+  "bbva.com.co",
+  "grupobancolombia.com",
+  "bancopichincha.com.co",
+  "bancocajasocial.com",
+  "bancoavvillas.com.co",
+  "bancopopular.com.co",
+  "bancooccidente.com.co",
+  "scotiabank.com.co",
+  "citibank.com.co",
+  "nequi.com.co",
+  "daviplata.com",
+  "nu.com.co",
+  "rappipay.co",
+
+  // ── Colombian Health (EPS, clinics, hospitals) ──
+  "nuevaeps.com.co",
+  "sura.com.co",
+  "epssanitas.com",
+  "saludtotal.com.co",
+  "coomeva.com.co",
+  "famisanar.com.co",
+  "compensar.com",
+  "colsanitas.com",
+  "medimas.com.co",
+  "aliansalud.com.co",
+  "cafesalud.com.co",
+  "fundacionsantafe.org",
+  "clinicadelcountry.com",
+  "shaio.org",
+  "fsfb.org.co",
+  "clinicamarly.com.co",
+
+  // ── Colombian Government ──
+  "gov.co",
+  "dian.gov.co",
+  "registraduria.gov.co",
+  "supernotariado.gov.co",
+  "procuraduria.gov.co",
+  "contraloria.gov.co",
+  "fiscalia.gov.co",
+  "defensoria.gov.co",
+  "policia.gov.co",
+  "mininterior.gov.co",
+  "minhacienda.gov.co",
+  "minsalud.gov.co",
+  "mineducacion.gov.co",
+  "mintrabajo.gov.co",
+  "minjusticia.gov.co",
+  "cancilleria.gov.co",
+  "senado.gov.co",
+  "camara.gov.co",
+  "corteconstitucional.gov.co",
+  "cortesuprema.gov.co",
+  "consejodeestado.gov.co",
+  "ramajudicial.gov.co",
+  "sic.gov.co",
+  "superfinanciera.gov.co",
+  "supersalud.gov.co",
+  "colpensiones.gov.co",
+  "icetex.gov.co",
+
+  // ── Colombian Immigration ──
+  "migracioncolombia.gov.co",
+  "cancilleria.gov.co",
+
+  // ── Colombian Legal ──
+  "ramajudicial.gov.co",
+  "notariado.gov.co",
+  "colegiodeabogados.co",
+
+  // ════════════════════════════════════════════════════════════
+  // VENEZUELA (.ve)
+  // ════════════════════════════════════════════════════════════
+
+  // ── Venezuelan Banks ──
+  "banesco.com",
+  "mercantilbanco.com",
+  "provincial.com",
+  "bnc.com.ve",
+  "bancaribe.com.ve",
+  "bod.com.ve",
+  "bicentenario.com.ve",
+  "banfanb.com.ve",
+  "exteriorbank.com",
+  "sofitasa.com",
+  "bancoplaza.com",
+  "bangente.com.ve",
+  "bancamiga.com",
+  "mibanco.com.ve",
+
+  // ── Venezuelan Health ──
+  "ivss.gob.ve",
+  "mpps.gob.ve",
+  "clinicascaracas.com",
+  "sanatorioadventista.org.ve",
+  "policlinicametropolitana.com",
+  "clinicaelavila.com",
+
+  // ── Venezuelan Government ──
+  "gob.ve",
+  "seniat.gob.ve",
+  "cne.gob.ve",
+  "mpps.gob.ve",
+  "mppre.gob.ve",
+  "mppe.gob.ve",
+  "mppt.gob.ve",
+  "mppj.gob.ve",
+  "mpprijp.gob.ve",
+  "tsj.gob.ve",
+  "fiscalia.gob.ve",
+  "defensoria.gob.ve",
+  "contraloria.gob.ve",
+  "asambleanacional.gob.ve",
+  "onidex.gob.ve",
+  "saren.gob.ve",
+  "sundde.gob.ve",
+  "indepabis.gob.ve",
+
+  // ── Venezuelan Immigration ──
+  "saime.gob.ve",
+  "migracion.gob.ve",
+
+  // ── Venezuelan Legal ──
+  "tsj.gob.ve",
+  "defensoria.gob.ve",
 ];
 
 // ── Unsubscribe Only (unsub but keep emails) ───────────────
@@ -105,9 +284,14 @@ const CLEANUP_BLOCKED_SENDERS = [
 //    WARNING: This deletes ALL emails, not just promotions!
 //    Use this for a full inbox wipe with your own filters.
 
+// Enable or disable the "deleteAllEmails" function.
+// true  = allowed to run
+// false = disabled (will log a warning and exit without deleting)
+const ENABLE_DELETE_ALL = false;
+
 // How old must an email be before it gets deleted?
 // Set the number and the unit ("days", "months", or "years").
-const DELETE_ALL_OLDER_THAN = 1;
+const DELETE_ALL_OLDER_THAN = 5;
 const DELETE_ALL_OLDER_THAN_UNIT = "years"; // "days", "months", or "years"
 
 // Uses the same EXCLUDED_SENDERS list from above.
@@ -117,7 +301,7 @@ const DELETE_ALL_OLDER_THAN_UNIT = "years"; // "days", "months", or "years"
 // Also empty the Spam folder on each run?
 // true  = yes, permanently delete all spam
 // false = no, leave spam alone
-const EMPTY_SPAM = true;
+const EMPTY_SPAM = false;
 
 // What happens to deleted emails?
 // false = move to Trash (you can recover them for 30 days)
@@ -309,8 +493,8 @@ function dryRun() {
       const from = msg.getFrom();
 
       if (isExcluded_(msg)) {
-        if (isHealthRelated_(msg)) {
-          Logger.log(`[SKIP - HEALTH] From: ${from} | Subject: ${msg.getSubject()}`);
+        if (isProtectedByKeywords_(msg)) {
+          Logger.log(`[SKIP - PROTECTED] From: ${from} | Subject: ${msg.getSubject()}`);
         }
         continue;
       }
@@ -334,6 +518,10 @@ function dryRun() {
  * Respects EXCLUDED_SENDERS (hardcoded + dynamic from sheet).
  */
 function deleteAllEmails() {
+  if (!ENABLE_DELETE_ALL) {
+    Logger.log("deleteAllEmails is disabled. Set ENABLE_DELETE_ALL = true to use it.");
+    return;
+  }
   setupSheet();
   const opts = DELETE_ALL_OPTIONS;
   const olderThan = opts.OLDER_THAN_DAYS > 0 ? ` older_than:${opts.OLDER_THAN_DAYS}d` : "";
@@ -372,6 +560,10 @@ function deleteAllEmails() {
  * Preview mode for deleteAllEmails — shows what would be deleted.
  */
 function deleteAllEmailsDryRun() {
+  if (!ENABLE_DELETE_ALL) {
+    Logger.log("deleteAllEmails is disabled. Set ENABLE_DELETE_ALL = true to use it.");
+    return;
+  }
   const opts = DELETE_ALL_OPTIONS;
   const olderThan = opts.OLDER_THAN_DAYS > 0 ? ` older_than:${opts.OLDER_THAN_DAYS}d` : "";
   const query = `in:inbox${olderThan}`;
@@ -607,8 +799,9 @@ function stripAccents_(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-// Health-related keywords (Spanish + English) for dynamic detection.
+// Protected keywords (Spanish + English) for dynamic detection.
 // All stored without accents — matching is accent-insensitive.
+
 const HEALTH_KEYWORDS_ = [
   // Spanish
   "clinica", "hospital", "medic", "doctor", "doctora",
@@ -622,6 +815,72 @@ const HEALTH_KEYWORDS_ = [
   "clinic", "hospital", "medical", "healthcare", "health care",
   "doctor", "physician", "pharmacy", "dental", "laboratory",
   "diagnosis", "prescription", "appointment",
+];
+
+const GOVERNMENT_KEYWORDS_ = [
+  // Spanish
+  "gobierno", "ministerio", "municipalidad", "municipio",
+  "servicio publico", "registro civil", "sii", "tesoreria",
+  "contraloria", "intendencia", "gobernacion", "subsecretaria",
+  "secretaria", "congreso", "senado", "camara de diputados",
+  "poder judicial", "fiscalia", "defensoria", "servel",
+  "servicio electoral", "aduanas", "sernac", "sence",
+  "serviu", "minvu", "minsal", "mineduc", "mintrab",
+  "carabineros", "policia", "investigaciones", "pdi",
+  "bomberos", "impuestos internos", "estado", "gob.cl",
+  "tributario", "fiscal", "notaria", "conservador de bienes",
+  // English
+  "government", "ministry", "municipality", "public service",
+  "civil registry", "treasury", "congress", "senate",
+  "judiciary", "prosecutor", "customs", "electoral",
+  "tax authority", "internal revenue", "irs", "federal",
+  "state department", "city hall", "county", "dmv",
+  "social security", "public defender", "notary public",
+];
+
+const IMMIGRATION_KEYWORDS_ = [
+  // Spanish
+  "migracion", "migraciones", "extranjeria", "visa",
+  "residencia", "permanencia definitiva", "permiso de trabajo",
+  "refugio", "asilo", "pasaporte", "cedula de identidad",
+  "rut", "apostilla", "consulado", "embajada", "legalizacion",
+  "nacionalidad", "ciudadania", "deportacion", "expulsion",
+  "repatriacion", "frontera", "aduana", "tramite migratorio",
+  "permiso de residencia", "tarjeta de residencia",
+  // English
+  "immigration", "migration", "visa", "residency", "residence permit",
+  "work permit", "green card", "asylum", "refugee",
+  "passport", "consulate", "embassy", "legalization",
+  "citizenship", "naturalization", "deportation", "border",
+  "travel document", "entry permit", "immigration status",
+  "permanent residence", "temporary residence",
+];
+
+const LEGAL_KEYWORDS_ = [
+  // Spanish
+  "abogado", "abogada", "bufete", "estudio juridico",
+  "estudio de abogados", "tribunal", "juzgado", "corte",
+  "corte suprema", "corte de apelaciones", "demanda",
+  "querella", "juicio", "sentencia", "resolucion judicial",
+  "notificacion judicial", "poder notarial", "escritura",
+  "contrato", "clausula", "arbitraje", "mediacion",
+  "defensor", "defensora", "procurador", "perito",
+  "citacion", "comparecencia", "recurso", "apelacion",
+  "cautelar", "embargo", "hipoteca", "testamento",
+  "herencia", "sucesion", "divorcio", "pension alimenticia",
+  "tutela", "curatela", "patente", "marca registrada",
+  "propiedad intelectual", "litigio",
+  // English
+  "attorney", "lawyer", "law firm", "legal", "court",
+  "supreme court", "tribunal", "lawsuit", "litigation",
+  "subpoena", "summons", "verdict", "ruling", "judgment",
+  "deposition", "affidavit", "power of attorney", "notarize",
+  "contract", "arbitration", "mediation", "counsel",
+  "paralegal", "solicitor", "barrister", "prosecutor",
+  "defendant", "plaintiff", "appeal", "injunction",
+  "custody", "divorce", "alimony", "child support",
+  "probate", "estate", "will", "trust", "trademark",
+  "intellectual property", "patent", "copyright",
 ];
 
 /**
@@ -638,11 +897,21 @@ function getExclusionReason_(message) {
   const dynMatch = getDynamicExcluded_().find((exc) => from.includes(exc));
   if (dynMatch) return `Excluded - Sheet (${dynMatch})`;
 
-  // Check health keywords
+  // Check protected keywords
   const subject = message.getSubject().toLowerCase();
   const text = stripAccents_(from + " " + subject);
+
   const healthMatch = HEALTH_KEYWORDS_.find((kw) => text.includes(kw));
   if (healthMatch) return `Health detected (${healthMatch})`;
+
+  const govMatch = GOVERNMENT_KEYWORDS_.find((kw) => text.includes(kw));
+  if (govMatch) return `Government detected (${govMatch})`;
+
+  const immMatch = IMMIGRATION_KEYWORDS_.find((kw) => text.includes(kw));
+  if (immMatch) return `Immigration detected (${immMatch})`;
+
+  const legalMatch = LEGAL_KEYWORDS_.find((kw) => text.includes(kw));
+  if (legalMatch) return `Legal detected (${legalMatch})`;
 
   return null;
 }
@@ -655,15 +924,19 @@ function isExcluded_(message) {
 }
 
 /**
- * Detects health-related emails by scanning sender name, email, and subject.
+ * Detects protected emails (health, government, immigration, legal)
+ * by scanning sender name, email, and subject.
  * Accent-insensitive: "Clínica" matches "clinica" and vice versa.
  */
-function isHealthRelated_(message) {
+function isProtectedByKeywords_(message) {
   const from = message.getFrom().toLowerCase();
   const subject = message.getSubject().toLowerCase();
   const text = stripAccents_(from + " " + subject);
 
-  return HEALTH_KEYWORDS_.some((kw) => text.includes(kw));
+  return HEALTH_KEYWORDS_.some((kw) => text.includes(kw))
+    || GOVERNMENT_KEYWORDS_.some((kw) => text.includes(kw))
+    || IMMIGRATION_KEYWORDS_.some((kw) => text.includes(kw))
+    || LEGAL_KEYWORDS_.some((kw) => text.includes(kw));
 }
 
 /**

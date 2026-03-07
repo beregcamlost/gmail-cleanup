@@ -30,20 +30,29 @@
 
 A Google Apps Script that automatically cleans your Gmail inbox by removing old promotions, newsletters, and marketing emails — and **unsubscribes you** from them before deleting.
 
+### Safe by Default
+
+Out of the box, the script **only** unsubscribes and trashes promotions/newsletters older than **1 day**. Everything else is opt-in:
+
+- Spam cleanup → off
+- Permanent delete → off (uses Trash, recoverable for 30 days)
+- Delete all emails → off (must explicitly enable)
+- Blocked senders → empty list
+
 ### Features
 
 | Feature | Description |
 |---------|-------------|
 | **Smart Detection** | Targets Gmail's Promotions category, newsletter patterns, and marketing senders |
 | **Auto-Unsubscribe** | Parses `List-Unsubscribe` headers and hits both HTTP (RFC 8058 one-click) and mailto endpoints |
-| **Sender Exclusions** | Whitelist domains you want to keep — hardcoded or managed via Google Sheet |
+| **Sender Exclusions** | Whitelist domains you want to keep — hardcoded (CL/CO/VE institutions included) or managed via Google Sheet |
 | **Unsubscribe Only** | Unsubscribe from senders but keep their emails (great for newsletters you want to archive) |
 | **Dynamic Lists** | Add/remove excluded or unsub-only senders directly from the Google Sheet — no code changes |
 | **Spam Cleanup** | Optionally empties the Spam folder on every run |
 | **Persistent Log** | Every unsubscribe action is logged to a Google Sheet for full traceability |
 | **Dry Run Mode** | Preview what would be deleted before pulling the trigger |
 | **Daily Automation** | Optional time-based trigger for hands-free daily cleanup |
-| **Health Detection** | Automatically protects health-related emails (clinics, doctors, hospitals, ISAPREs) via keyword detection |
+| **Smart Protection** | Automatically protects health, government, immigration, and legal emails via keyword detection (ES + EN) |
 | **Blocked Senders** | Maintain a blocklist for senders you always want nuked |
 
 ---
@@ -116,13 +125,14 @@ All settings are clearly labeled at the **top of the script** — it's the only 
 ```javascript
 // ── Cleanup Settings ───────────────────────────────────────
 
-const CLEANUP_OLDER_THAN = 3;                // How old? (number)
-const CLEANUP_OLDER_THAN_UNIT = "years";     // "days", "months", or "years"
+const CLEANUP_OLDER_THAN = 1;                // How old? (number)
+const CLEANUP_OLDER_THAN_UNIT = "days";      // "days", "months", or "years"
 const CLEANUP_AUTO_UNSUBSCRIBE = true;       // Unsubscribe before deleting?
 
 const EXCLUDED_SENDERS = [                   // Domains/senders to NEVER touch
   "linkedin.com", "google.com",
-  "bancochile.cl", "bancoestado.cl",         // Chilean banks included
+  // Chilean, Colombian, Venezuelan institutions included:
+  // banks, health, government, immigration, legal
   // ... (full list in script)
 ];
 
@@ -134,12 +144,13 @@ const CLEANUP_BLOCKED_SENDERS = [];          // Senders to ALWAYS delete
 
 // ── Delete All Settings (nuclear option) ───────────────────
 
-const DELETE_ALL_OLDER_THAN = 1;             // How old? (number)
+const ENABLE_DELETE_ALL = false;             // Enable the deleteAllEmails function?
+const DELETE_ALL_OLDER_THAN = 5;             // How old? (number)
 const DELETE_ALL_OLDER_THAN_UNIT = "years";  // "days", "months", or "years"
 
 // ── General ────────────────────────────────────────────────
 
-const EMPTY_SPAM = true;                     // Empty spam folder on each run?
+const EMPTY_SPAM = false;                    // Empty spam folder on each run?
 const PERMANENT_DELETE = false;              // false = trash, true = gone forever
 const LOG_SPREADSHEET_NAME = "Gmail Cleanup Log";
 ```
@@ -168,8 +179,8 @@ Just type a domain (e.g., `mybank.com`) or email in column A and the script pick
 | `cleanupInbox()` | Main cleanup — deletes promotions/newsletters, unsubscribes, and purges spam |
 | `dryRun()` | Preview mode — shows what would happen without acting |
 | `cleanupBlockedSenders()` | Deletes emails from your blocked senders list |
-| `deleteAllEmails()` | Nuclear option — deletes ALL emails (respects exclusions and age config) |
-| `deleteAllEmailsDryRun()` | Preview mode for `deleteAllEmails()` |
+| `deleteAllEmails()` | Nuclear option — deletes ALL emails (disabled by default, set `ENABLE_DELETE_ALL = true`) |
+| `deleteAllEmailsDryRun()` | Preview mode for `deleteAllEmails()` (also requires `ENABLE_DELETE_ALL = true`) |
 | `setupSheet()` | Creates/refreshes the Google Sheet tabs and syncs hardcoded values |
 | `setupDailyTrigger()` | Sets up automatic daily execution at 2-3 AM |
 
@@ -180,8 +191,8 @@ Just type a domain (e.g., `mybank.com`) or email in column A and the script pick
 ```
 Email found in inbox
   │
-  ├─ Sender in EXCLUDED list? → Skip entirely (no unsub, no delete)
-  ├─ Health-related email?    → Skip (auto-detected by keywords in sender/subject)
+  ├─ Sender in EXCLUDED list?   → Skip entirely (no unsub, no delete)
+  ├─ Protected email detected? → Skip (health, government, immigration, or legal keywords)
   │
   ├─ Sender in UNSUB ONLY list? → Unsubscribe, but keep the email
   │
