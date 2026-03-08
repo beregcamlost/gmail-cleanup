@@ -725,7 +725,15 @@ function processQuery_(query, skipKeywords) {
 
 function tryUnsubscribe_(message) {
   const messageId = message.getId();
+  const from = message.getFrom().toLowerCase();
   const unsubLabel = getOrCreateLabel_(CONFIG.UNSUBSCRIBED_LABEL);
+
+  // Skip if we already unsubscribed this sender during this run
+  const senderKey = from.replace(/.*<([^>]+)>.*/, "$1").replace(/.*@/, "");
+  if (unsubscribedSenders_.has(senderKey)) {
+    message.getThread().addLabel(unsubLabel);
+    return false;
+  }
 
   const thread = message.getThread();
   const labels = thread.getLabels();
@@ -771,6 +779,7 @@ function tryUnsubscribe_(message) {
           });
         }
         thread.addLabel(unsubLabel);
+        unsubscribedSenders_.add(senderKey);
         logUnsubscribe_(message.getFrom(), "HTTP", url, "Success");
         Logger.log(`Unsubscribed (HTTP): ${message.getFrom()}`);
         return true;
@@ -789,6 +798,7 @@ function tryUnsubscribe_(message) {
         noReply: true,
       });
       thread.addLabel(unsubLabel);
+      unsubscribedSenders_.add(senderKey);
       logUnsubscribe_(message.getFrom(), "mailto", email, "Success");
       Logger.log(`Unsubscribed (mailto): ${message.getFrom()} -> ${email}`);
       return true;
@@ -1083,6 +1093,9 @@ function isUnsubOnly_(message) {
 
 // Track already-logged protected senders (avoid duplicates per run)
 let loggedProtected_ = new Set();
+
+// Track already-unsubscribed senders (avoid duplicate mailto/HTTP calls per run)
+let unsubscribedSenders_ = new Set();
 
 /**
  * Logs a protected sender to the "Protected Senders" sheet tab.
