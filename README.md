@@ -41,7 +41,6 @@ Everything goes to Trash (recoverable for 30 days) — nothing is permanently de
 
 | Setting | Default | What it does |
 |---------|---------|-------------|
-| `CLEANUP_AUTO_UNSUBSCRIBE` | `true` | Unsubscribe before trashing promotions |
 | `CLEANUP_OLDER_THAN` | `1 day` | Age threshold for promotion cleanup |
 | `EMPTY_SPAM` | `true` | Move spam to Trash on each run |
 | `PERMANENT_DELETE` | `false` | Use Trash (not permanent delete) |
@@ -138,7 +137,6 @@ All settings are clearly labeled at the **top of the script** — it's the only 
 
 const CLEANUP_OLDER_THAN = 1;                // How old? (number)
 const CLEANUP_OLDER_THAN_UNIT = "days";      // "days", "months", or "years"
-const CLEANUP_AUTO_UNSUBSCRIBE = true;       // Unsubscribe before deleting?
 
 const EXCLUDED_SENDERS = [                   // Domains/senders to NEVER touch
   "linkedin.com", "google.com", "anthropic.com",

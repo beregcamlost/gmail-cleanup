@@ -41,7 +41,6 @@ Todo va a la Papelera (recuperable por 30 días) — nada se elimina permanentem
 
 | Ajuste | Valor por defecto | Qué hace |
 |--------|-------------------|----------|
-| `CLEANUP_AUTO_UNSUBSCRIBE` | `true` | Desuscribir antes de mover promociones a papelera |
 | `CLEANUP_OLDER_THAN` | `1 día` | Antigüedad mínima para limpieza de promociones |
 | `EMPTY_SPAM` | `true` | Mover spam a Papelera en cada ejecución |
 | `PERMANENT_DELETE` | `false` | Usar Papelera (no eliminar permanentemente) |
@@ -138,7 +137,6 @@ Todos los ajustes están claramente etiquetados al **inicio del script** — es 
 
 const CLEANUP_OLDER_THAN = 1;                // ¿Qué tan antiguos? (número)
 const CLEANUP_OLDER_THAN_UNIT = "days";      // "days", "months", o "years"
-const CLEANUP_AUTO_UNSUBSCRIBE = true;       // ¿Desuscribirse antes de eliminar?
 
 const EXCLUDED_SENDERS = [                   // Dominios/remitentes a NUNCA tocar
   "linkedin.com", "google.com", "anthropic.com",

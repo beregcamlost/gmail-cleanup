@@ -34,11 +34,6 @@
 const CLEANUP_OLDER_THAN = 1;
 const CLEANUP_OLDER_THAN_UNIT = "days"; // "days", "months", or "years"
 
-// Should the script try to unsubscribe you from mailing lists?
-// true  = yes, unsubscribe before deleting
-// false = no, just delete without unsubscribing
-const CLEANUP_AUTO_UNSUBSCRIBE = true;
-
 // ── Excluded Senders (shared by all functions) ─────────────
 //    These senders are NEVER touched — no unsubscribe, no delete.
 //    You can also add senders dynamically via the Google Sheet
@@ -337,7 +332,6 @@ function toDays_(value, unit) {
 const CONFIG = {
   BATCH_SIZE: 500,
   PERMANENT_DELETE: PERMANENT_DELETE,
-  AUTO_UNSUBSCRIBE: CLEANUP_AUTO_UNSUBSCRIBE,
   OLDER_THAN_DAYS: toDays_(CLEANUP_OLDER_THAN, CLEANUP_OLDER_THAN_UNIT),
   EXCLUDED_SENDERS: EXCLUDED_SENDERS,
   UNSUBSCRIBE_ONLY_SENDERS: UNSUBSCRIBE_ONLY_SENDERS,
@@ -346,15 +340,22 @@ const CONFIG = {
   LOG_SPREADSHEET_NAME: LOG_SPREADSHEET_NAME,
 };
 
+const CLEANUP_QUERIES_ = [
+  "category:promotions",
+  "label:^unsub OR subject:(unsubscribe OR newsletter OR digest OR weekly OR bulletin)",
+  'from:(noreply OR no-reply OR newsletter OR marketing OR promo OR info@ OR news@)',
+];
+
 const DELETE_ALL_OPTIONS = {
   OLDER_THAN_DAYS: toDays_(DELETE_ALL_OLDER_THAN, DELETE_ALL_OLDER_THAN_UNIT),
   EXCLUDED_SENDERS: EXCLUDED_SENDERS,
   PERMANENT_DELETE: PERMANENT_DELETE,
 };
 
-// ── Cached dynamic lists (loaded once per run) ─────────────
+// ── Cached values (loaded once per run) ──────────────────
 let dynamicExcluded_ = null;
 let dynamicUnsubOnly_ = null;
+let cachedSpreadsheet_ = null;
 
 function getDynamicExcluded_() {
   if (dynamicExcluded_) return dynamicExcluded_;
@@ -445,19 +446,10 @@ function loadSheetList_(tabName) {
  * Also unsubscribes you from mailing lists if enabled.
  */
 function cleanupInbox() {
-  setupSheet();
-
-  const queries = [
-    "category:promotions",
-    "label:^unsub OR subject:(unsubscribe OR newsletter OR digest OR weekly OR bulletin)",
-    'from:(noreply OR no-reply OR newsletter OR marketing OR promo OR info@ OR news@)',
-  ];
-
   let totalDeleted = 0;
 
-  for (const query of queries) {
-    const skipKeywords = query === "category:promotions";
-    totalDeleted += deleteQuery_(query, skipKeywords);
+  for (const query of CLEANUP_QUERIES_) {
+    totalDeleted += deleteQuery_(query, query === "category:promotions");
   }
 
   let spamDeleted = 0;
@@ -477,19 +469,10 @@ function cleanupInbox() {
  * without deleting. Runs on a separate trigger (every 3 days).
  */
 function unsubscribeInbox() {
-  setupSheet();
-
-  const queries = [
-    "category:promotions",
-    "label:^unsub OR subject:(unsubscribe OR newsletter OR digest OR weekly OR bulletin)",
-    'from:(noreply OR no-reply OR newsletter OR marketing OR promo OR info@ OR news@)',
-  ];
-
   let totalUnsubscribed = 0;
 
-  for (const query of queries) {
-    const skipKeywords = query === "category:promotions";
-    totalUnsubscribed += unsubscribeQuery_(query, skipKeywords);
+  for (const query of CLEANUP_QUERIES_) {
+    totalUnsubscribed += unsubscribeQuery_(query, query === "category:promotions");
   }
 
   flushUnsubscribeLog_();
@@ -502,15 +485,9 @@ function unsubscribeInbox() {
  * Always run this first!
  */
 function dryRun() {
-  const queries = [
-    "category:promotions",
-    "label:^unsub OR subject:(unsubscribe OR newsletter OR digest OR weekly OR bulletin)",
-    'from:(noreply OR no-reply OR newsletter OR marketing OR promo OR info@ OR news@)',
-  ];
-
   const seen = new Set();
 
-  for (const query of queries) {
+  for (const query of CLEANUP_QUERIES_) {
     const skipKeywords = query === "category:promotions";
     const fullQuery = `in:inbox ${query}`;
     const threads = GmailApp.search(fullQuery, 0, 50);
@@ -522,9 +499,7 @@ function dryRun() {
       const msg = thread.getMessages()[0];
       const from = msg.getFrom();
 
-      const excluded = skipKeywords
-        ? getSenderExclusionReason_(msg)
-        : getExclusionReason_(msg);
+      const excluded = getExclusionReasonForQuery_(msg, skipKeywords);
       if (excluded) {
         Logger.log(`[SKIP - ${excluded}] From: ${from} | Subject: ${msg.getSubject()}`);
         continue;
@@ -732,9 +707,7 @@ function deleteQuery_(query, skipKeywords) {
     for (const thread of threads) {
       const firstMessage = thread.getMessages()[0];
 
-      const exclusionReason = skipKeywords
-        ? getSenderExclusionReason_(firstMessage)
-        : getExclusionReason_(firstMessage);
+      const exclusionReason = getExclusionReasonForQuery_(firstMessage, skipKeywords);
       if (exclusionReason) {
         queueProtectedLog_(firstMessage, exclusionReason);
         continue;
@@ -764,24 +737,16 @@ function unsubscribeQuery_(query, skipKeywords) {
 
   do {
     threads = GmailApp.search(fullQuery, 0, CONFIG.BATCH_SIZE);
-    let progress = false;
 
     for (const thread of threads) {
       const firstMessage = thread.getMessages()[0];
 
-      const exclusionReason = skipKeywords
-        ? getSenderExclusionReason_(firstMessage)
-        : getExclusionReason_(firstMessage);
-      if (exclusionReason) continue;
+      if (getExclusionReasonForQuery_(firstMessage, skipKeywords)) continue;
 
       if (tryUnsubscribe_(firstMessage)) {
         unsubscribed++;
-        progress = true;
       }
     }
-
-    // Stop if no new unsubscribes happened (all threads already labeled)
-    if (!progress) break;
   } while (threads.length === CONFIG.BATCH_SIZE);
 
   return unsubscribed;
@@ -1121,6 +1086,17 @@ function getExclusionReason_(message) {
 }
 
 /**
+ * Returns the exclusion reason for a message based on query type.
+ * For category:promotions (skipKeywords=true), only checks sender lists.
+ * For broader queries, also checks keyword protection.
+ */
+function getExclusionReasonForQuery_(message, skipKeywords) {
+  return skipKeywords
+    ? getSenderExclusionReason_(message)
+    : getExclusionReason_(message);
+}
+
+/**
  * Checks if a sender is excluded (hardcoded + dynamic from sheet + health detection).
  */
 function isExcluded_(message) {
@@ -1256,6 +1232,8 @@ function syncSheetTab_(ss, tabName, hardcodedValues) {
 }
 
 function getOrCreateSpreadsheet_() {
+  if (cachedSpreadsheet_) return cachedSpreadsheet_;
+
   const name = CONFIG.LOG_SPREADSHEET_NAME;
   const files = DriveApp.getFilesByName(name);
 
@@ -1289,6 +1267,7 @@ function getOrCreateSpreadsheet_() {
     }
   }
 
+  cachedSpreadsheet_ = ss;
   return ss;
 }
 
