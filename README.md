@@ -61,7 +61,7 @@ Everything goes to Trash (recoverable for 30 days) — nothing is permanently de
 | **Persistent Log** | Every unsubscribe action is logged to a Google Sheet for full traceability |
 | **Dry Run Mode** | Preview what would be deleted before pulling the trigger |
 | **Daily Automation** | Optional time-based trigger for hands-free daily cleanup |
-| **Smart Protection** | Automatically protects health, government, immigration, legal, education, and transactional emails via word-boundary keyword detection (ES + EN) — won't false-match promo words like "steps" or "valley" |
+| **Smart Protection** | Keyword detection (ES + EN) protects health, government, immigration, legal, education, and transactional emails — but only for ambiguous queries. Gmail's own `category:promotions` is trusted and deleted without keyword checks |
 | **Blocked Senders** | Maintain a blocklist for senders you always want nuked |
 
 ---

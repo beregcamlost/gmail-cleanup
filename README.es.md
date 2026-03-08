@@ -61,7 +61,7 @@ Todo va a la Papelera (recuperable por 30 días) — nada se elimina permanentem
 | **Log Persistente** | Cada acción de desuscripción se registra en una hoja de Google Sheets |
 | **Modo Simulación** | Previsualiza qué se eliminaría antes de ejecutar |
 | **Automatización Diaria** | Trigger programado opcional para limpieza diaria automática |
-| **Protección Inteligente** | Protege automáticamente correos de salud, gobierno, migración, legales, educación y transaccionales via detección de palabras clave con word-boundary (ES + EN) — no confunde palabras promocionales como "steps" o "valley" |
+| **Protección Inteligente** | Detección de palabras clave (ES + EN) protege correos de salud, gobierno, migración, legales, educación y transaccionales — pero solo en consultas ambiguas. `category:promotions` de Gmail se respeta y elimina sin verificación de keywords |
 | **Remitentes Bloqueados** | Mantén una lista de remitentes que siempre quieres eliminar |
 
 ---

@@ -454,7 +454,8 @@ function cleanupInbox() {
   let totalUnsubOnly = 0;
 
   for (const query of queries) {
-    const result = processQuery_(query);
+    const skipKeywords = query === "category:promotions";
+    const result = processQuery_(query, skipKeywords);
     totalDeleted += result.deleted;
     totalUnsubscribed += result.unsubscribed;
     totalUnsubOnly += result.unsubOnly;
@@ -484,6 +485,7 @@ function dryRun() {
   const seen = new Set();
 
   for (const query of queries) {
+    const skipKeywords = query === "category:promotions";
     const fullQuery = `in:inbox ${query}`;
     const threads = GmailApp.search(fullQuery, 0, 50);
 
@@ -494,10 +496,11 @@ function dryRun() {
       const msg = thread.getMessages()[0];
       const from = msg.getFrom();
 
-      if (isExcluded_(msg)) {
-        if (isProtectedByKeywords_(msg)) {
-          Logger.log(`[SKIP - PROTECTED] From: ${from} | Subject: ${msg.getSubject()}`);
-        }
+      const excluded = skipKeywords
+        ? getSenderExclusionReason_(msg)
+        : getExclusionReason_(msg);
+      if (excluded) {
+        Logger.log(`[SKIP - ${excluded}] From: ${from} | Subject: ${msg.getSubject()}`);
         continue;
       }
 
@@ -664,7 +667,7 @@ function setupDailyTrigger() {
 
 // ── Internal functions (don't touch) ───────────────────────
 
-function processQuery_(query) {
+function processQuery_(query, skipKeywords) {
   const olderThan =
     CONFIG.OLDER_THAN_DAYS > 0
       ? ` older_than:${CONFIG.OLDER_THAN_DAYS}d`
@@ -683,7 +686,11 @@ function processQuery_(query) {
       const firstMessage = thread.getMessages()[0];
 
       // Fully excluded — skip entirely and log
-      const exclusionReason = getExclusionReason_(firstMessage);
+      // When skipKeywords is true (category:promotions), only check
+      // the explicit sender/domain exclusion lists, not keyword detection.
+      const exclusionReason = skipKeywords
+        ? getSenderExclusionReason_(firstMessage)
+        : getExclusionReason_(firstMessage);
       if (exclusionReason) {
         logProtected_(firstMessage, exclusionReason);
         continue;
@@ -982,6 +989,22 @@ function matchesKeyword_(text, keyword) {
     ? `\\b${escaped}\\b`
     : `\\b${escaped}`;
   return new RegExp(pattern).test(text);
+}
+
+/**
+ * Checks only the explicit sender/domain exclusion lists (no keyword detection).
+ * Used for category:promotions where Gmail already classified it as marketing.
+ */
+function getSenderExclusionReason_(message) {
+  const from = message.getFrom().toLowerCase();
+
+  const hardMatch = CONFIG.EXCLUDED_SENDERS.find((exc) => from.includes(exc));
+  if (hardMatch) return `Excluded (${hardMatch})`;
+
+  const dynMatch = getDynamicExcluded_().find((exc) => from.includes(exc));
+  if (dynMatch) return `Excluded - Sheet (${dynMatch})`;
+
+  return null;
 }
 
 /**
