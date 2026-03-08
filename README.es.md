@@ -120,10 +120,12 @@ El script usa tres consultas de búsqueda para encontrar correos a limpiar:
 1. Selecciona `cleanupInbox` en el menú desplegable de funciones
 2. Haz clic en **Ejecutar**
 
-### 5. (Opcional) Automatizar
+### 5. Automatizar
 
-1. Selecciona `setupDailyTrigger` y haz clic en **Ejecutar**
-2. El script se ejecutará automáticamente todos los días entre las 2-3 AM
+1. Selecciona `setup` en el menú desplegable y haz clic en **Ejecutar**
+2. Esto crea la hoja de Google Sheets, configura ambos triggers y listo:
+   - **Diario a las 2-3 AM** — `cleanupInbox` elimina promociones (rápido, sin overhead de API)
+   - **Cada 3 días a las 3-4 AM** — `unsubscribeInbox` cancela suscripciones
 
 ---
 
@@ -186,13 +188,15 @@ Solo escribe un dominio (ej. `mibanco.cl`) o correo en la columna A y el script 
 
 | Función | Descripción |
 |---------|-------------|
-| `cleanupInbox()` | Limpieza principal — elimina promociones/newsletters, desuscribe y purga spam |
+| `setup()` | **Setup completo** — crea la hoja de Google Sheets y ambos triggers. Ejecutar una sola vez |
+| `cleanupInbox()` | Limpieza diaria — elimina promociones/newsletters y purga spam (sin desuscribir) |
+| `unsubscribeInbox()` | Pasada de desuscripción — cancela suscripciones sin eliminar correos |
 | `dryRun()` | Modo simulación — muestra qué pasaría sin ejecutar nada |
 | `cleanupBlockedSenders()` | Elimina correos de tu lista de remitentes bloqueados |
 | `deleteAllEmails()` | Opción nuclear — elimina TODOS los correos (deshabilitado por defecto, activar con `ENABLE_DELETE_ALL = true`) |
 | `deleteAllEmailsDryRun()` | Modo simulación para `deleteAllEmails()` (también requiere `ENABLE_DELETE_ALL = true`) |
 | `setupSheet()` | Crea/actualiza las pestañas de Google Sheets y sincroniza valores del script |
-| `setupDailyTrigger()` | Configura ejecución automática diaria a las 2-3 AM |
+| `setupTriggers()` | Configura ambos triggers: eliminación diaria + desuscripción cada 3 días |
 
 ---
 

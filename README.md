@@ -120,10 +120,12 @@ The script uses three search queries to find emails to clean up:
 1. Select `cleanupInbox` from the function dropdown
 2. Click **Run**
 
-### 5. (Optional) Automate
+### 5. Automate
 
-1. Select `setupDailyTrigger` and click **Run**
-2. The script will now run daily at 2-3 AM automatically
+1. Select `setup` from the dropdown and click **Run**
+2. This creates the Google Sheet, sets up both triggers, and you're done:
+   - **Daily at 2-3 AM** — `cleanupInbox` deletes promotions (fast, no API overhead)
+   - **Every 3 days at 3-4 AM** — `unsubscribeInbox` unsubscribes from mailing lists
 
 ---
 
@@ -186,13 +188,15 @@ Just type a domain (e.g., `mybank.com`) or email in column A and the script pick
 
 | Function | Description |
 |----------|-------------|
-| `cleanupInbox()` | Main cleanup — deletes promotions/newsletters, unsubscribes, and purges spam |
+| `setup()` | **One-click setup** — creates the Google Sheet and both triggers. Run this once |
+| `cleanupInbox()` | Daily cleanup — deletes promotions/newsletters and purges spam (no unsubscribe) |
+| `unsubscribeInbox()` | Unsubscribe pass — unsubscribes from mailing lists without deleting |
 | `dryRun()` | Preview mode — shows what would happen without acting |
 | `cleanupBlockedSenders()` | Deletes emails from your blocked senders list |
 | `deleteAllEmails()` | Nuclear option — deletes ALL emails (disabled by default, set `ENABLE_DELETE_ALL = true`) |
 | `deleteAllEmailsDryRun()` | Preview mode for `deleteAllEmails()` (also requires `ENABLE_DELETE_ALL = true`) |
 | `setupSheet()` | Creates/refreshes the Google Sheet tabs and syncs hardcoded values |
-| `setupDailyTrigger()` | Sets up automatic daily execution at 2-3 AM |
+| `setupTriggers()` | Sets up both triggers: daily delete + every-3-days unsubscribe |
 
 ---
 

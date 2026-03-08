@@ -8,7 +8,11 @@
 //    3. Click "Services" (+) on the left → add "Gmail API"
 //    4. CHANGE THE SETTINGS BELOW to fit your needs
 //    5. Select "dryRun" from the dropdown and click Run (to preview)
-//    6. Select "cleanupInbox" and click Run (to actually clean)
+//    6. Select "setup" and click Run (creates sheet + triggers)
+//
+//  TRIGGERS (set automatically by "setup"):
+//    - cleanupInbox:      daily at 2-3 AM  (delete only, fast)
+//    - unsubscribeInbox:  every 3 days at 3-4 AM (unsub only)
 //
 // ============================================================
 
@@ -450,15 +454,10 @@ function cleanupInbox() {
   ];
 
   let totalDeleted = 0;
-  let totalUnsubscribed = 0;
-  let totalUnsubOnly = 0;
 
   for (const query of queries) {
     const skipKeywords = query === "category:promotions";
-    const result = processQuery_(query, skipKeywords);
-    totalDeleted += result.deleted;
-    totalUnsubscribed += result.unsubscribed;
-    totalUnsubOnly += result.unsubOnly;
+    totalDeleted += deleteQuery_(query, skipKeywords);
   }
 
   let spamDeleted = 0;
@@ -466,9 +465,36 @@ function cleanupInbox() {
     spamDeleted = emptySpam_();
   }
 
+  flushProtectedLog_();
+
   Logger.log(
-    `Done. Deleted: ${totalDeleted}, Unsubscribed: ${totalUnsubscribed}, Unsub-only (kept): ${totalUnsubOnly}, Spam purged: ${spamDeleted}.`
+    `Done. Deleted: ${totalDeleted}, Spam purged: ${spamDeleted}.`
   );
+}
+
+/**
+ * Unsubscribe-only pass — finds promotions/newsletters and unsubscribes
+ * without deleting. Runs on a separate trigger (every 3 days).
+ */
+function unsubscribeInbox() {
+  setupSheet();
+
+  const queries = [
+    "category:promotions",
+    "label:^unsub OR subject:(unsubscribe OR newsletter OR digest OR weekly OR bulletin)",
+    'from:(noreply OR no-reply OR newsletter OR marketing OR promo OR info@ OR news@)',
+  ];
+
+  let totalUnsubscribed = 0;
+
+  for (const query of queries) {
+    const skipKeywords = query === "category:promotions";
+    totalUnsubscribed += unsubscribeQuery_(query, skipKeywords);
+  }
+
+  flushUnsubscribeLog_();
+
+  Logger.log(`Done. Unsubscribed: ${totalUnsubscribed}.`);
 }
 
 /**
@@ -544,7 +570,7 @@ function deleteAllEmails() {
 
       const reason = getExclusionReason_(msg);
       if (reason) {
-        logProtected_(msg, reason);
+        queueProtectedLog_(msg, reason);
         totalSkipped++;
         continue;
       }
@@ -558,6 +584,7 @@ function deleteAllEmails() {
     }
   } while (threads.length === CONFIG.BATCH_SIZE);
 
+  flushProtectedLog_();
   Logger.log(`Done. Deleted: ${totalDeleted} threads, Skipped (excluded): ${totalSkipped}.`);
 }
 
@@ -645,12 +672,25 @@ function setupSheet() {
 }
 
 /**
- * Sets up automatic daily cleanup (runs between 2-3 AM).
+ * One-click setup — creates the Google Sheet, sets up both triggers,
+ * and runs a dry run so you can verify. Run this once after pasting the script.
  */
-function setupDailyTrigger() {
+function setup() {
+  setupSheet();
+  setupTriggers();
+  Logger.log("Setup complete. Run dryRun() to preview what would be deleted.");
+}
+
+/**
+ * Sets up both automatic triggers:
+ *   - cleanupInbox: daily at 2-3 AM (delete only, fast)
+ *   - unsubscribeInbox: every 3 days at 3-4 AM (unsub only, slower)
+ */
+function setupTriggers() {
   const triggers = ScriptApp.getProjectTriggers();
   for (const trigger of triggers) {
-    if (trigger.getHandlerFunction() === "cleanupInbox") {
+    const fn = trigger.getHandlerFunction();
+    if (fn === "cleanupInbox" || fn === "unsubscribeInbox") {
       ScriptApp.deleteTrigger(trigger);
     }
   }
@@ -661,13 +701,22 @@ function setupDailyTrigger() {
     .atHour(2)
     .create();
 
-  Logger.log("Daily cleanup trigger set for 2-3 AM.");
+  ScriptApp.newTrigger("unsubscribeInbox")
+    .timeBased()
+    .everyDays(3)
+    .atHour(3)
+    .create();
+
+  Logger.log("Triggers set: cleanupInbox daily at 2-3 AM, unsubscribeInbox every 3 days at 3-4 AM.");
 }
 
 
 // ── Internal functions (don't touch) ───────────────────────
 
-function processQuery_(query, skipKeywords) {
+/**
+ * Delete-only pass for a single query. No unsubscribe calls — just fast deletion.
+ */
+function deleteQuery_(query, skipKeywords) {
   const olderThan =
     CONFIG.OLDER_THAN_DAYS > 0
       ? ` older_than:${CONFIG.OLDER_THAN_DAYS}d`
@@ -675,8 +724,6 @@ function processQuery_(query, skipKeywords) {
   const fullQuery = `in:inbox ${query}${olderThan}`;
 
   let deleted = 0;
-  let unsubscribed = 0;
-  let unsubOnly = 0;
   let threads;
 
   do {
@@ -685,31 +732,15 @@ function processQuery_(query, skipKeywords) {
     for (const thread of threads) {
       const firstMessage = thread.getMessages()[0];
 
-      // Fully excluded — skip entirely and log
-      // When skipKeywords is true (category:promotions), only check
-      // the explicit sender/domain exclusion lists, not keyword detection.
       const exclusionReason = skipKeywords
         ? getSenderExclusionReason_(firstMessage)
         : getExclusionReason_(firstMessage);
       if (exclusionReason) {
-        logProtected_(firstMessage, exclusionReason);
+        queueProtectedLog_(firstMessage, exclusionReason);
         continue;
       }
 
-      // Unsubscribe only — unsub but don't delete
-      if (isUnsubOnly_(firstMessage)) {
-        if (CONFIG.AUTO_UNSUBSCRIBE && tryUnsubscribe_(firstMessage)) {
-          unsubOnly++;
-        }
-        continue;
-      }
-
-      // Default — unsub + delete
-      if (CONFIG.AUTO_UNSUBSCRIBE) {
-        if (tryUnsubscribe_(firstMessage)) {
-          unsubscribed++;
-        }
-      }
+      if (isUnsubOnly_(firstMessage)) continue;
 
       if (CONFIG.PERMANENT_DELETE) {
         Gmail.Users.Threads.remove("me", thread.getId());
@@ -720,7 +751,40 @@ function processQuery_(query, skipKeywords) {
     }
   } while (threads.length === CONFIG.BATCH_SIZE);
 
-  return { deleted, unsubscribed, unsubOnly };
+  return deleted;
+}
+
+/**
+ * Unsubscribe-only pass for a single query. No deletion — just unsubscribe calls.
+ */
+function unsubscribeQuery_(query, skipKeywords) {
+  const fullQuery = `in:inbox ${query}`;
+  let unsubscribed = 0;
+  let threads;
+
+  do {
+    threads = GmailApp.search(fullQuery, 0, CONFIG.BATCH_SIZE);
+    let progress = false;
+
+    for (const thread of threads) {
+      const firstMessage = thread.getMessages()[0];
+
+      const exclusionReason = skipKeywords
+        ? getSenderExclusionReason_(firstMessage)
+        : getExclusionReason_(firstMessage);
+      if (exclusionReason) continue;
+
+      if (tryUnsubscribe_(firstMessage)) {
+        unsubscribed++;
+        progress = true;
+      }
+    }
+
+    // Stop if no new unsubscribes happened (all threads already labeled)
+    if (!progress) break;
+  } while (threads.length === CONFIG.BATCH_SIZE);
+
+  return unsubscribed;
 }
 
 function tryUnsubscribe_(message) {
@@ -1097,14 +1161,26 @@ let loggedProtected_ = new Set();
 // Track already-unsubscribed senders (avoid duplicate mailto/HTTP calls per run)
 let unsubscribedSenders_ = new Set();
 
+// Batched log queues (flushed once at end of run)
+let protectedLogQueue_ = [];
+let unsubscribeLogQueue_ = [];
+
 /**
- * Logs a protected sender to the "Protected Senders" sheet tab.
- * Only logs each sender once per run.
+ * Queues a protected sender for batch logging.
+ * Only queues each sender once per run.
  */
-function logProtected_(message, reason) {
+function queueProtectedLog_(message, reason) {
   const from = message.getFrom();
   if (loggedProtected_.has(from)) return;
   loggedProtected_.add(from);
+  protectedLogQueue_.push([new Date(), from, message.getSubject(), reason]);
+}
+
+/**
+ * Flushes all queued protected sender logs to the sheet in one write.
+ */
+function flushProtectedLog_() {
+  if (protectedLogQueue_.length === 0) return;
 
   const ss = getOrCreateSpreadsheet_();
   let sheet = ss.getSheetByName("Protected Senders");
@@ -1115,7 +1191,9 @@ function logProtected_(message, reason) {
     sheet.setFrozenRows(1);
   }
 
-  sheet.appendRow([new Date(), from, message.getSubject(), reason]);
+  const startRow = sheet.getLastRow() + 1;
+  sheet.getRange(startRow, 1, protectedLogQueue_.length, 4).setValues(protectedLogQueue_);
+  protectedLogQueue_ = [];
 }
 
 function emptySpam_() {
@@ -1227,8 +1305,19 @@ function getLogSheet_() {
 }
 
 function logUnsubscribe_(from, method, target, status) {
+  unsubscribeLogQueue_.push([new Date(), from, method, target, status]);
+}
+
+/**
+ * Flushes all queued unsubscribe logs to the sheet in one write.
+ */
+function flushUnsubscribeLog_() {
+  if (unsubscribeLogQueue_.length === 0) return;
+
   const sheet = getLogSheet_();
-  sheet.appendRow([new Date(), from, method, target, status]);
+  const startRow = sheet.getLastRow() + 1;
+  sheet.getRange(startRow, 1, unsubscribeLogQueue_.length, 5).setValues(unsubscribeLogQueue_);
+  unsubscribeLogQueue_ = [];
 }
 
 function getOrCreateLabel_(name) {
