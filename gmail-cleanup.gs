@@ -926,8 +926,8 @@ const EDUCATION_KEYWORDS_ = [
   "education", "academic", "teacher", "professor",
   "dean", "rector", "provost", "tuition", "scholarship",
   "grade", "transcript", "exam", "thesis", "dissertation",
-  "master", "doctorate", "bachelor", "postgraduate",
-  "certification", "course", "seminar", "library",
+  "doctorate", "bachelor", "postgraduate",
+  "certification", "seminar", "library",
   "virtual classroom", "learning platform", "e-learning",
   "ministry of education", "school board", "accreditation",
   "curriculum", "semester", "quarter", "enrollment",
@@ -947,7 +947,7 @@ const TRANSACTIONAL_KEYWORDS_ = [
   "devolucion", "reembolso", "cambio de producto",
   "suscripcion renovada", "renovacion", "plan contratado",
   "reserva confirmada", "confirmacion de reserva", "itinerario",
-  "boleto", "pasaje", "entrada", "ticket",
+  "boleto", "pasaje", "entrada",
   "estado de cuenta", "resumen de cuenta", "movimientos",
   "clave temporal", "codigo de verificacion", "verificacion",
   "activacion de cuenta", "restablecer contrasena",
@@ -963,11 +963,26 @@ const TRANSACTIONAL_KEYWORDS_ = [
   "return", "refund", "exchange",
   "subscription renewed", "renewal", "plan activated",
   "booking confirmed", "reservation confirmed", "itinerary",
-  "ticket", "boarding pass", "e-ticket",
+  "boarding pass", "e-ticket",
   "account statement", "account summary", "account activity",
   "temporary password", "verification code", "verify your",
   "account activation", "reset password", "two-factor",
 ];
+
+/**
+ * Checks if text contains a keyword using word-boundary-aware matching.
+ * Short keywords (≤ 4 chars) require word boundaries on both sides
+ * to prevent "eps" matching "steps", "ley" matching "valley", etc.
+ * Longer keywords require a word boundary at the start only
+ * (to allow prefix matching like "oftalmolog" → "oftalmologia").
+ */
+function matchesKeyword_(text, keyword) {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = keyword.length <= 4
+    ? `\\b${escaped}\\b`
+    : `\\b${escaped}`;
+  return new RegExp(pattern).test(text);
+}
 
 /**
  * Checks if a sender is excluded. Returns the reason string or null.
@@ -987,22 +1002,22 @@ function getExclusionReason_(message) {
   const subject = message.getSubject().toLowerCase();
   const text = stripAccents_(from + " " + subject);
 
-  const healthMatch = HEALTH_KEYWORDS_.find((kw) => text.includes(kw));
+  const healthMatch = HEALTH_KEYWORDS_.find((kw) => matchesKeyword_(text, kw));
   if (healthMatch) return `Health detected (${healthMatch})`;
 
-  const govMatch = GOVERNMENT_KEYWORDS_.find((kw) => text.includes(kw));
+  const govMatch = GOVERNMENT_KEYWORDS_.find((kw) => matchesKeyword_(text, kw));
   if (govMatch) return `Government detected (${govMatch})`;
 
-  const immMatch = IMMIGRATION_KEYWORDS_.find((kw) => text.includes(kw));
+  const immMatch = IMMIGRATION_KEYWORDS_.find((kw) => matchesKeyword_(text, kw));
   if (immMatch) return `Immigration detected (${immMatch})`;
 
-  const legalMatch = LEGAL_KEYWORDS_.find((kw) => text.includes(kw));
+  const legalMatch = LEGAL_KEYWORDS_.find((kw) => matchesKeyword_(text, kw));
   if (legalMatch) return `Legal detected (${legalMatch})`;
 
-  const eduMatch = EDUCATION_KEYWORDS_.find((kw) => text.includes(kw));
+  const eduMatch = EDUCATION_KEYWORDS_.find((kw) => matchesKeyword_(text, kw));
   if (eduMatch) return `Education detected (${eduMatch})`;
 
-  const txnMatch = TRANSACTIONAL_KEYWORDS_.find((kw) => text.includes(kw));
+  const txnMatch = TRANSACTIONAL_KEYWORDS_.find((kw) => matchesKeyword_(text, kw));
   if (txnMatch) return `Transactional detected (${txnMatch})`;
 
   return null;
@@ -1025,12 +1040,12 @@ function isProtectedByKeywords_(message) {
   const subject = message.getSubject().toLowerCase();
   const text = stripAccents_(from + " " + subject);
 
-  return HEALTH_KEYWORDS_.some((kw) => text.includes(kw))
-    || GOVERNMENT_KEYWORDS_.some((kw) => text.includes(kw))
-    || IMMIGRATION_KEYWORDS_.some((kw) => text.includes(kw))
-    || LEGAL_KEYWORDS_.some((kw) => text.includes(kw))
-    || EDUCATION_KEYWORDS_.some((kw) => text.includes(kw))
-    || TRANSACTIONAL_KEYWORDS_.some((kw) => text.includes(kw));
+  return HEALTH_KEYWORDS_.some((kw) => matchesKeyword_(text, kw))
+    || GOVERNMENT_KEYWORDS_.some((kw) => matchesKeyword_(text, kw))
+    || IMMIGRATION_KEYWORDS_.some((kw) => matchesKeyword_(text, kw))
+    || LEGAL_KEYWORDS_.some((kw) => matchesKeyword_(text, kw))
+    || EDUCATION_KEYWORDS_.some((kw) => matchesKeyword_(text, kw))
+    || TRANSACTIONAL_KEYWORDS_.some((kw) => matchesKeyword_(text, kw));
 }
 
 /**
