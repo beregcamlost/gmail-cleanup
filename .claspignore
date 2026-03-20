@@ -1,0 +1,7 @@
+README.md
+README.es.md
+.git/**
+.claude/**
+.gitignore
+.gitattributes
+.claspignore
