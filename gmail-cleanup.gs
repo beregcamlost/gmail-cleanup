@@ -344,6 +344,7 @@ const CLEANUP_QUERIES_ = [
   "category:promotions",
   "label:^unsub OR subject:(unsubscribe OR newsletter OR digest OR weekly OR bulletin)",
   'from:(noreply OR no-reply OR newsletter OR marketing OR promo OR info@ OR news@)',
+  'from:(mailer-daemon OR postmaster) subject:(delivery OR undeliverable OR "not delivered" OR failure OR rejected OR bounced)',
 ];
 
 const DELETE_ALL_OPTIONS = {
@@ -820,17 +821,8 @@ function tryUnsubscribe_(message) {
 
     const mailtoMatch = value.match(/<mailto:([^>?]+)(\?subject=([^>]*))?>/);
     if (mailtoMatch) {
-      const email = mailtoMatch[1];
-      const subject = mailtoMatch[3] || "Unsubscribe";
-
-      GmailApp.sendEmail(email, subject, "Unsubscribe", {
-        noReply: true,
-      });
-      thread.addLabel(unsubLabel);
-      unsubscribedSenders_.add(senderKey);
-      logUnsubscribe_(message.getFrom(), "mailto", email, "Success");
-      Logger.log(`Unsubscribed (mailto): ${message.getFrom()} -> ${email}`);
-      return true;
+      logUnsubscribe_(message.getFrom(), "mailto", mailtoMatch[1], "Skipped (mailto disabled)");
+      Logger.log(`Skipped mailto unsubscribe for ${message.getFrom()} (causes bounces)`);
     }
   } catch (e) {
     Logger.log(`Unsubscribe error for ${messageId}: ${e}`);
