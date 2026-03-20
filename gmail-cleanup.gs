@@ -329,6 +329,8 @@ function toDays_(value, unit) {
   }
 }
 
+const MAX_RUNTIME_MS = 5 * 60 * 1000; // 5 min (GAS limit is 6 min)
+
 const CONFIG = {
   BATCH_SIZE: 500,
   PERMANENT_DELETE: PERMANENT_DELETE,
@@ -357,6 +359,13 @@ const DELETE_ALL_OPTIONS = {
 let dynamicExcluded_ = null;
 let dynamicUnsubOnly_ = null;
 let cachedSpreadsheet_ = null;
+
+let runStartTime_ = null;
+
+function isTimeUp_() {
+  if (!runStartTime_) return false;
+  return (Date.now() - runStartTime_) > MAX_RUNTIME_MS;
+}
 
 function getDynamicExcluded_() {
   if (dynamicExcluded_) return dynamicExcluded_;
@@ -447,21 +456,24 @@ function loadSheetList_(tabName) {
  * Also unsubscribes you from mailing lists if enabled.
  */
 function cleanupInbox() {
+  runStartTime_ = Date.now();
   let totalDeleted = 0;
 
   for (const query of CLEANUP_QUERIES_) {
+    if (isTimeUp_()) break;
     totalDeleted += deleteQuery_(query, query === "category:promotions");
   }
 
   let spamDeleted = 0;
-  if (EMPTY_SPAM) {
+  if (EMPTY_SPAM && !isTimeUp_()) {
     spamDeleted = emptySpam_();
   }
 
   flushProtectedLog_();
 
+  const elapsed = ((Date.now() - runStartTime_) / 1000).toFixed(1);
   Logger.log(
-    `Done. Deleted: ${totalDeleted}, Spam purged: ${spamDeleted}.`
+    `Done in ${elapsed}s. Deleted: ${totalDeleted}, Spam purged: ${spamDeleted}.`
   );
 }
 
@@ -470,15 +482,18 @@ function cleanupInbox() {
  * without deleting. Runs on a separate trigger (every 3 days).
  */
 function unsubscribeInbox() {
+  runStartTime_ = Date.now();
   let totalUnsubscribed = 0;
 
   for (const query of CLEANUP_QUERIES_) {
+    if (isTimeUp_()) break;
     totalUnsubscribed += unsubscribeQuery_(query, query === "category:promotions");
   }
 
   flushUnsubscribeLog_();
 
-  Logger.log(`Done. Unsubscribed: ${totalUnsubscribed}.`);
+  const elapsed = ((Date.now() - runStartTime_) / 1000).toFixed(1);
+  Logger.log(`Done in ${elapsed}s. Unsubscribed: ${totalUnsubscribed}.`);
 }
 
 /**
@@ -530,6 +545,7 @@ function deleteAllEmails() {
     return;
   }
   setupSheet();
+  runStartTime_ = Date.now();
   const opts = DELETE_ALL_OPTIONS;
   const olderThan = opts.OLDER_THAN_DAYS > 0 ? ` older_than:${opts.OLDER_THAN_DAYS}d` : "";
   const query = `in:inbox${olderThan}`;
@@ -539,7 +555,13 @@ function deleteAllEmails() {
   let threads;
 
   do {
+    if (isTimeUp_()) {
+      Logger.log(`Time limit reached — deleted ${totalDeleted} so far.`);
+      break;
+    }
+
     threads = GmailApp.search(query, 0, CONFIG.BATCH_SIZE);
+    const toTrash = [];
 
     for (const thread of threads) {
       const msg = thread.getMessages()[0];
@@ -553,10 +575,16 @@ function deleteAllEmails() {
 
       if (opts.PERMANENT_DELETE) {
         Gmail.Users.Threads.remove("me", thread.getId());
+        totalDeleted++;
       } else {
-        thread.moveToTrash();
+        toTrash.push(thread);
       }
-      totalDeleted++;
+    }
+
+    while (toTrash.length > 0) {
+      const batch = toTrash.splice(0, 100);
+      GmailApp.moveThreadsToTrash(batch);
+      totalDeleted += batch.length;
     }
   } while (threads.length === CONFIG.BATCH_SIZE);
 
@@ -673,8 +701,7 @@ function setupTriggers() {
 
   ScriptApp.newTrigger("cleanupInbox")
     .timeBased()
-    .everyDays(1)
-    .atHour(2)
+    .everyHours(1)
     .create();
 
   ScriptApp.newTrigger("unsubscribeInbox")
@@ -683,7 +710,7 @@ function setupTriggers() {
     .atHour(3)
     .create();
 
-  Logger.log("Triggers set: cleanupInbox daily at 2-3 AM, unsubscribeInbox every 3 days at 3-4 AM.");
+  Logger.log("Triggers set: cleanupInbox every hour (backlog mode), unsubscribeInbox every 3 days at 3-4 AM.");
 }
 
 
@@ -693,6 +720,8 @@ function setupTriggers() {
  * Delete-only pass for a single query. No unsubscribe calls — just fast deletion.
  */
 function deleteQuery_(query, skipKeywords) {
+  if (!runStartTime_) runStartTime_ = Date.now();
+
   const olderThan =
     CONFIG.OLDER_THAN_DAYS > 0
       ? ` older_than:${CONFIG.OLDER_THAN_DAYS}d`
@@ -700,10 +729,18 @@ function deleteQuery_(query, skipKeywords) {
   const fullQuery = `in:inbox ${query}${olderThan}`;
 
   let deleted = 0;
+  let offset = 0;
   let threads;
 
   do {
-    threads = GmailApp.search(fullQuery, 0, CONFIG.BATCH_SIZE);
+    if (isTimeUp_()) {
+      Logger.log(`Time limit reached during "${query}" — deleted ${deleted} so far.`);
+      break;
+    }
+
+    threads = GmailApp.search(fullQuery, offset, CONFIG.BATCH_SIZE);
+    const toTrash = [];
+    let skipped = 0;
 
     for (const thread of threads) {
       const firstMessage = thread.getMessages()[0];
@@ -711,18 +748,33 @@ function deleteQuery_(query, skipKeywords) {
       const exclusionReason = getExclusionReasonForQuery_(firstMessage, skipKeywords);
       if (exclusionReason) {
         queueProtectedLog_(firstMessage, exclusionReason);
+        skipped++;
         continue;
       }
 
-      if (isUnsubOnly_(firstMessage)) continue;
+      if (isUnsubOnly_(firstMessage)) {
+        skipped++;
+        continue;
+      }
 
       if (CONFIG.PERMANENT_DELETE) {
         Gmail.Users.Threads.remove("me", thread.getId());
+        deleted++;
       } else {
-        thread.moveToTrash();
+        toTrash.push(thread);
       }
-      deleted++;
     }
+
+    // Batch trash (GmailApp supports up to 100 threads per call)
+    while (toTrash.length > 0) {
+      const batch = toTrash.splice(0, 100);
+      GmailApp.moveThreadsToTrash(batch);
+      deleted += batch.length;
+    }
+
+    // Advance offset past skipped threads to avoid re-fetching them
+    offset += skipped;
+
   } while (threads.length === CONFIG.BATCH_SIZE);
 
   return deleted;
@@ -732,11 +784,18 @@ function deleteQuery_(query, skipKeywords) {
  * Unsubscribe-only pass for a single query. No deletion — just unsubscribe calls.
  */
 function unsubscribeQuery_(query, skipKeywords) {
+  if (!runStartTime_) runStartTime_ = Date.now();
+
   const fullQuery = `in:inbox ${query}`;
   let unsubscribed = 0;
   let threads;
 
   do {
+    if (isTimeUp_()) {
+      Logger.log(`Time limit reached during unsub "${query}" — unsubscribed ${unsubscribed} so far.`);
+      break;
+    }
+
     threads = GmailApp.search(fullQuery, 0, CONFIG.BATCH_SIZE);
 
     for (const thread of threads) {
@@ -1169,16 +1228,27 @@ function emptySpam_() {
   let threads;
 
   do {
+    if (isTimeUp_()) break;
+
     threads = GmailApp.search("in:spam", 0, CONFIG.BATCH_SIZE);
-    for (const thread of threads) {
-      if (CONFIG.PERMANENT_DELETE) {
+    const batchLen = threads.length;
+
+    if (CONFIG.PERMANENT_DELETE) {
+      for (const thread of threads) {
         Gmail.Users.Threads.remove("me", thread.getId());
-      } else {
-        thread.moveToTrash();
+        totalDeleted++;
       }
-      totalDeleted++;
+    } else {
+      const toTrash = threads.slice();
+      while (toTrash.length > 0) {
+        const batch = toTrash.splice(0, 100);
+        GmailApp.moveThreadsToTrash(batch);
+        totalDeleted += batch.length;
+      }
     }
-  } while (threads.length === CONFIG.BATCH_SIZE);
+
+    if (batchLen < CONFIG.BATCH_SIZE) break;
+  } while (true);
 
   Logger.log(`Spam cleanup: ${totalDeleted} threads ${CONFIG.PERMANENT_DELETE ? "permanently deleted" : "moved to trash"}.`);
   return totalDeleted;
